@@ -1,0 +1,14 @@
+{
+  "name": "babel-plugin-tester",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@babel/core": "^7.21.8",
+    "@babel/traverse": "^7.21.5",
+    "@babel/types": "^7.21.5"
+  },
+  "devDependencies": {
+    "@types/babel__core": "^7.20.0",
+    "@types/node": "^20.1.2"
+  }
+}
