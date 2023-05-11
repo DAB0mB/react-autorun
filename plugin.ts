@@ -14,7 +14,7 @@ namespace Root {
 
     return {
       Program: {
-        exit(path) {
+        exit() {
           hookTransformer.transform();
           moduleTransformer.transform();
         },
@@ -24,7 +24,7 @@ namespace Root {
       },
 
       VariableDeclarator(path) {
-        hookTransformer.collectHooks(path, (...args) => moduleTransformer.isReactAutoReference(...args));
+        hookTransformer.collectHook(path, (...args) => moduleTransformer.isReactAutoReference(...args));
       },
 
       AssignmentExpression(path) {
@@ -88,7 +88,7 @@ namespace Hook {
   export class Transformer {
     readonly hooks = new Map<t.Identifier, HookTransformer>();
 
-    collectHooks(
+    collectHook(
       path: NodePath<t.VariableDeclarator>,
       isReactAutoReference: Module.Transformer['isReactAutoReference'],
     ) {
@@ -176,9 +176,36 @@ namespace Hook {
     }
   }
 
+  export class UseRefTransformer extends HookTransformer {
+    readonly setterId = this.variableDeclarator.scope.generateUidIdentifier(`set${this.id.name.charAt(0).toUpperCase()}${this.id.name.slice(1)}`);
+
+    get type() {
+      return 'useRef';
+    }
+
+    transformVariableDeclarator() {
+    }
+
+    transformAssignmentExpressions() {
+      for (const expression of this.assignmentExpressions) {
+        expression.replaceWith(
+          t.assignmentExpression(
+            expression.node.operator,
+            t.memberExpression(
+              this.id,
+              t.identifier('current'),
+            ),
+            expression.node.right,
+          ),
+        );
+      }
+    }
+  }
+
   export function createHookTransformer(variableDeclarator: NodePath<VariableDeclarator>) {
     switch (variableDeclarator.node.init.callee.property.name) {
       case 'useState': return new UseStateTransformer(variableDeclarator);
+      case 'useRef': return new UseRefTransformer(variableDeclarator);
     }
   }
 }
