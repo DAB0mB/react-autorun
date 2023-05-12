@@ -1,7 +1,7 @@
 import * as babel from '@babel/core'
 import * as fs from 'fs'
 import { fileURLToPath } from 'url'
-import plugin from './plugin.js'
+import plugin from './plugin/index.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
