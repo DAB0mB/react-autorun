@@ -4,21 +4,14 @@ import { HookNode, HookTransformer } from './hook_transformer.js';
 
 export class UseRefTransformer extends HookTransformer {
   id?: t.Identifier;
-  readonly assignments: NodePath<t.AssignmentExpression>[] = [];
+  readonly references: NodePath<t.Identifier>[] = [];
 
   transform() {
     if (!this.id) return;
 
-    for (const assignment of this.assignments) {
-      assignment.replaceWith(
-        t.assignmentExpression(
-          assignment.node.operator,
-          t.memberExpression(
-            this.id,
-            t.identifier('current'),
-          ),
-          assignment.node.right,
-        ),
+    for (const reference of this.references) {
+      reference.replaceWith(
+        t.identifier(`${this.id.name}.current`),
       );
     }
   }
@@ -31,13 +24,13 @@ export class UseRefTransformer extends HookTransformer {
     if (!id) return;
 
     path.scope.path.traverse({
-      AssignmentExpression: (path) => {
-        if (!t.isIdentifier(path.node.left)) return;
+      Identifier: (path) => {
+        if (path.node === id) return;
 
-        const bindingId = path.scope.getBindingIdentifier(path.node.left.name);
+        const bindingId = path.scope.getBindingIdentifier(path.node.name);
         if (bindingId !== id) return;
 
-        this.assignments.push(path);
+        this.references.push(path);
       },
     });
   }

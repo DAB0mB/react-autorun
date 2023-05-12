@@ -47,6 +47,7 @@ export class UseStateTransformer extends HookTransformer {
     path.scope.path.traverse({
       AssignmentExpression: (path) => {
         if (!t.isIdentifier(path.node.left)) return;
+        if (path.node.left === id) return;
 
         const bindingId = path.scope.getBindingIdentifier(path.node.left.name);
         if (bindingId !== id) return;
