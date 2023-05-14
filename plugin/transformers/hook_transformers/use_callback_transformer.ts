@@ -30,6 +30,7 @@ export class UseCallbackTransformer extends HookTransformer {
 
         if (!t.isIdentifier(object)) return;
         if (!this.path.scope.getOwnBinding(object.name)) return;
+        if (this.store.depIgnore.has(object)) return;
 
         let dep = object.name;
         while (props.length > 1) {

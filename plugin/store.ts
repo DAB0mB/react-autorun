@@ -7,8 +7,14 @@ export type StoreConfig = {
   reactModuleName: string,
 };
 
+export type ProgramImport = {
+  declaration: NodePath<t.ImportDeclaration>,
+  specifier: t.ImportSpecifier | t.ImportDefaultSpecifier | t.ImportNamespaceSpecifier,
+};
+
 export class Store {
-  readonly moduleImportDeclarations = new Map<t.Identifier, NodePath<t.ImportDeclaration>>();
+  readonly programImports = new Map<t.Identifier, ProgramImport>();
+  readonly depIgnore = new Set<t.Identifier>();
   readonly hooks: HookTransformer[] = [];
 
   constructor(readonly config: StoreConfig) {

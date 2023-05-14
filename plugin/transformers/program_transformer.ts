@@ -5,6 +5,8 @@ import { createHookTransformer } from './hook_transformers/index.js';
 import { Transformer } from './transformer.js';
 
 export class ProgramTransformer extends Transformer {
+  readonly moduleImportDeclarations: t.ImportDeclaration[] = [];
+
   constructor(store: Store, readonly path: NodePath<t.Program>) {
     super(store, path);
   }
@@ -14,25 +16,16 @@ export class ProgramTransformer extends Transformer {
       hook.transform();
     }
 
-    for (const [, declaration] of this.store.moduleImportDeclarations) {
-      declaration.replaceWith(
-        t.importDeclaration(
-          declaration.node.specifiers,
-          t.stringLiteral(this.store.config.reactModuleName),
-        ),
-      );
+    for (const importDeclaration of this.moduleImportDeclarations) {
+      importDeclaration.source.value = this.store.config.reactModuleName;
     }
   }
 
   traverse() {
     this.path.traverse({
       ImportDeclaration: (path) => {
-        if (path.node.source.value !== this.store.config.moduleName) return;
-
-        for (const specifier of path.node.specifiers) {
-          if (t.isImportDefaultSpecifier(specifier)) {
-            this.store.moduleImportDeclarations.set(specifier.local, path);
-          }
+        if (path.node.source.value === this.store.config.moduleName) {
+          this.moduleImportDeclarations.push(path.node);
         }
       },
 

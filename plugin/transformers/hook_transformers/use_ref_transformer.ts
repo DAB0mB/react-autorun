@@ -18,7 +18,7 @@ export class UseRefTransformer extends HookTransformer {
   }
 
   traverse() {
-    if (!this.id) return;
+    if (!this.id) return
 
     this.path.scope.path.traverse({
       Identifier: (path) => {
