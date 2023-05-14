@@ -1,5 +1,5 @@
 import { Visitor } from '@babel/traverse';
-import { RootTransformer } from './transformers/root_transformer.js';
+import { ProgramTransformer } from './transformers/program_transformer.js';
 import { Store } from './store.js';
 
 export default function() {
@@ -10,12 +10,10 @@ export default function() {
 
   return {
     visitor: {
-      Program: {
-        enter(path) {
-          const root = new RootTransformer(store, path);
-          root.traverse();
-          root.transform();
-        },
+      Program(path) {
+        const root = new ProgramTransformer(store, path);
+        root.traverse();
+        root.transform();
       },
     } as Visitor,
   };

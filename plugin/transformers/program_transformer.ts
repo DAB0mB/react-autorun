@@ -1,9 +1,15 @@
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { Transformer } from './transformer.js';
+import { Store } from '../store.js';
 import { createHookTransformer } from './hook_transformers/index.js';
+import { Transformer } from './transformer.js';
 
-export class RootTransformer extends Transformer {
-  transform(): void {
+export class ProgramTransformer extends Transformer {
+  constructor(store: Store, readonly path: NodePath<t.Program>) {
+    super(store, path);
+  }
+
+  transform() {
     for (const hook of this.store.hooks) {
       hook.transform();
     }
