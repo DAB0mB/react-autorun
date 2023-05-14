@@ -1,8 +1,8 @@
 import { NodePath } from '@babel/traverse';
-import { Store } from '../store';
+import { Config } from '../config';
 
 export abstract class Transformer {
-  constructor(readonly store: Store, readonly path: NodePath) {}
+  constructor(readonly path: NodePath, readonly config: Config) {}
 
   abstract transform(): void;
 
