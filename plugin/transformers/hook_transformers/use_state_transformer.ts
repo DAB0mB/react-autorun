@@ -3,8 +3,9 @@ import * as t from '@babel/types';
 import { HookTransformer } from './hook_transformer.js';
 
 export class UseStateTransformer extends HookTransformer {
-  setterId?: t.Identifier;
-  variable?: NodePath<t.VariableDeclarator>;
+  readonly variable = t.isVariableDeclarator(this.path.parentPath.node) ? this.path.parentPath as NodePath<t.VariableDeclarator> : undefined;
+  readonly id = this.variable && t.isIdentifier(this.variable.node.id) ? this.variable.node.id : undefined;
+  readonly setterId = this.id && this.path.scope.generateUidIdentifier(`set${this.id.name.charAt(0).toUpperCase()}${this.id.name.slice(1)}`);
   readonly assignments: NodePath<t.AssignmentExpression>[] = [];
 
   transform() {
@@ -36,21 +37,13 @@ export class UseStateTransformer extends HookTransformer {
   }
 
   traverse() {
-    this.variable = t.isVariableDeclarator(this.path.parentPath.node) ? this.path.parentPath as NodePath<t.VariableDeclarator> : undefined;
-    if (!this.variable) return;
-
-    const id = t.isIdentifier(this.variable.node.id) ? this.variable.node.id : undefined;
-    if (!id) return;
-
-    this.setterId = this.path.scope.generateUidIdentifier(`set${id.name.charAt(0).toUpperCase()}${id.name.slice(1)}`);
-
     this.path.scope.path.traverse({
       AssignmentExpression: (path) => {
         if (!t.isIdentifier(path.node.left)) return;
-        if (path.node.left === id) return;
+        if (path.node.left === this.id) return;
 
         const bindingId = path.scope.getBindingIdentifier(path.node.left.name);
-        if (bindingId !== id) return;
+        if (bindingId !== this.id) return;
 
         this.assignments.push(path);
       },

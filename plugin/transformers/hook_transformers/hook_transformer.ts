@@ -1,7 +1,8 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { z } from 'zod';
-import { Transformer } from './transformer.js';
+import { Store } from '../../store.js';
+import { Transformer } from '../transformer.js';
 
 export type HookNode = z.infer<typeof zHookNode>;
 
@@ -13,9 +14,7 @@ export const zHookNode = z.any().refine(t.isCallExpression).and(z.object({
 }));
 
 export abstract class HookTransformer extends Transformer {
-  constructor(readonly path: NodePath<HookNode>) {
-    super();
+  constructor(store: Store, readonly path: NodePath<HookNode>) {
+    super(store, path);
   }
-
-  abstract traverse(): void;
 }

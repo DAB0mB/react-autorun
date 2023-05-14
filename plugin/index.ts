@@ -1,17 +1,19 @@
 import { Visitor } from '@babel/traverse';
 import { RootTransformer } from './transformers/root_transformer.js';
+import { Store } from './store.js';
 
 export default function() {
-  const root = new RootTransformer();
+  const store = new Store({
+    moduleName: 'react-useless',
+    reactModuleName: 'react',
+  });
 
   return {
     visitor: {
       Program: {
         enter(path) {
-          root.traverse(path);
-        },
-
-        exit() {
+          const root = new RootTransformer(store, path);
+          root.traverse();
           root.transform();
         },
       },

@@ -1,9 +1,10 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { HookNode, HookTransformer } from './hook_transformer.js';
+import { HookTransformer } from './hook_transformer.js';
 
 export class UseRefTransformer extends HookTransformer {
-  id?: t.Identifier;
+  readonly variable = t.isVariableDeclarator(this.path.parentPath.node) ? this.path.parentPath as NodePath<t.VariableDeclarator> : undefined;
+  readonly id = this.variable && t.isIdentifier(this.variable.node.id) ? this.variable.node.id : undefined;
   readonly references: NodePath<t.Identifier>[] = [];
 
   transform() {
@@ -17,18 +18,14 @@ export class UseRefTransformer extends HookTransformer {
   }
 
   traverse() {
-    const variable = t.isVariableDeclarator(this.path.parentPath.node) ? this.path.parentPath as NodePath<t.VariableDeclarator> : undefined;
-    if (!variable) return;
-
-    const id = this.id = t.isIdentifier(variable.node.id) ? variable.node.id : undefined;
-    if (!id) return;
+    if (!this.id) return;
 
     this.path.scope.path.traverse({
       Identifier: (path) => {
-        if (path.node === id) return;
+        if (path.node === this.id) return;
 
         const bindingId = path.scope.getBindingIdentifier(path.node.name);
-        if (bindingId !== id) return;
+        if (bindingId !== this.id) return;
 
         this.references.push(path);
       },

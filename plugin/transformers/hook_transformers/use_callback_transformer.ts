@@ -1,15 +1,12 @@
 import { CodeGenerator } from '@babel/generator';
 import * as t from '@babel/types';
-import { HookNode, HookTransformer } from './hook_transformer.js';
+import { HookTransformer } from './hook_transformer.js';
 
 export class UseCallbackTransformer extends HookTransformer {
   readonly deps = new Set<string>();
-  node?: HookNode;
 
   transform() {
-    if (!this.node) return;
-
-    this.node.arguments.push(
+    this.path.node.arguments.push(
       t.arrayExpression(
         [...this.deps].map(t.identifier)
       )
@@ -17,9 +14,6 @@ export class UseCallbackTransformer extends HookTransformer {
   }
 
   traverse() {
-    this.node = this.path.node;
-    const scope = this.path.scope;
-
     const callback = this.path.node.arguments[0];
     if (!t.isArrowFunctionExpression(callback) && !t.isFunctionExpression(callback)) return;
 
@@ -35,7 +29,7 @@ export class UseCallbackTransformer extends HookTransformer {
         }
 
         if (!t.isIdentifier(object)) return;
-        if (!scope.getOwnBinding(object.name)) return;
+        if (!this.path.scope.getOwnBinding(object.name)) return;
 
         let dep = object.name;
         while (props.length > 1) {
@@ -50,7 +44,7 @@ export class UseCallbackTransformer extends HookTransformer {
 
       Identifier: (path) => {
         if (t.isMemberExpression(path.parent)) return;
-        if (!scope.getOwnBinding(path.node.name)) return;
+        if (!this.path.scope.getOwnBinding(path.node.name)) return;
 
         this.deps.add(path.node.name);
       },
