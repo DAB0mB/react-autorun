@@ -16,14 +16,14 @@ export class UseRefTransformer extends HookTransformer {
     }
   }
 
-  traverse(path: NodePath<HookNode>) {
-    const variable = t.isVariableDeclarator(path.parentPath.node) ? path.parentPath as NodePath<t.VariableDeclarator> : undefined;
+  traverse() {
+    const variable = t.isVariableDeclarator(this.path.parentPath.node) ? this.path.parentPath as NodePath<t.VariableDeclarator> : undefined;
     if (!variable) return;
 
     const id = this.id = t.isIdentifier(variable.node.id) ? variable.node.id : undefined;
     if (!id) return;
 
-    path.scope.path.traverse({
+    this.path.scope.path.traverse({
       Identifier: (path) => {
         if (path.node === id) return;
 

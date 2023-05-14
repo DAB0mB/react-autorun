@@ -1,6 +1,5 @@
-import { NodePath, Scope } from '@babel/traverse';
-import * as t from '@babel/types';
 import { CodeGenerator } from '@babel/generator';
+import * as t from '@babel/types';
 import { HookNode, HookTransformer } from './hook_transformer.js';
 
 export class UseCallbackTransformer extends HookTransformer {
@@ -17,14 +16,14 @@ export class UseCallbackTransformer extends HookTransformer {
     );
   }
 
-  traverse(path: NodePath<HookNode>) {
-    this.node = path.node;
-    const scope = path.scope;
+  traverse() {
+    this.node = this.path.node;
+    const scope = this.path.scope;
 
-    const callback = path.node.arguments[0];
+    const callback = this.path.node.arguments[0];
     if (!t.isArrowFunctionExpression(callback) && !t.isFunctionExpression(callback)) return;
 
-    path.traverse({
+    this.path.traverse({
       MemberExpression: (path) => {
         if (t.isMemberExpression(path.parent)) return;
 

@@ -1,10 +1,8 @@
-import { NodePath, Scope } from '@babel/traverse';
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { HookNode, HookTransformer, isHookPath } from './hook_transformer.js';
+import { HookTransformer } from './hook_transformer.js';
 import { Transformer } from './transformer.js';
-import { UseRefTransformer } from './use_ref_transformer.js';
-import { UseStateTransformer } from './use_state_transformer.js';
-import { UseCallbackTransformer } from './use_callback_transformer.js';
+import { HookTransformerFactory } from './hook_transformer_factory.js';
 
 export type RootTransformerConfig = {
   moduleName: string,
@@ -14,6 +12,7 @@ export type RootTransformerConfig = {
 export class RootTransformer extends Transformer {
   readonly config: RootTransformerConfig;
   readonly moduleImportDeclarations = new Map<t.Identifier, NodePath<t.ImportDeclaration>>();
+  readonly hookTransformerFactory = new HookTransformerFactory(this);
   readonly hooks: HookTransformer[] = [];
 
   constructor(config: Partial<RootTransformerConfig> = {}) {
@@ -54,30 +53,13 @@ export class RootTransformer extends Transformer {
       },
 
       CallExpression: (path) => {
-        if (!isHookPath(path)) return;
-        const hook = this.createHookTransformer(path);
+        const hook = this.hookTransformerFactory.create(path);
 
         if (hook) {
-          hook.traverse(path);
+          hook.traverse();
           this.hooks.push(hook);
         }
       },
     });
-  }
-
-  createHookTransformer(path: NodePath<HookNode>) {
-    if (!this.isModuleReference(path.scope, path.node.callee.object)) return;
-
-    switch (path.node.callee.property.name) {
-      case 'useCallback': return new UseCallbackTransformer();
-      case 'useState': return new UseStateTransformer();
-      case 'useRef': return new UseRefTransformer();
-    }
-  }
-
-  isModuleReference(scope: Scope, id: t.Identifier) {
-    const bindingId = scope.getBindingIdentifier(id.name);
-
-    return this.moduleImportDeclarations.has(bindingId);
   }
 }

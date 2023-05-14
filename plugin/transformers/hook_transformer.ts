@@ -1,27 +1,21 @@
-import { NodePath, Visitor } from '@babel/traverse';
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
+import { z } from 'zod';
 import { Transformer } from './transformer.js';
 
-export type HookNode = t.CallExpression & {
-  callee: t.CallExpression & {
-    object: t.Identifier,
-    property: t.Identifier
-  }
-};
+export type HookNode = z.infer<typeof zHookNode>;
+
+export const zHookNode = z.any().refine(t.isCallExpression).and(z.object({
+  callee: z.any().refine(t.isMemberExpression).and(z.object({
+    object: z.any().refine(t.isIdentifier),
+    property: z.any().refine(t.isIdentifier),
+  })),
+}));
 
 export abstract class HookTransformer extends Transformer {
-  abstract traverse(path: NodePath<HookNode>): void;
-}
+  constructor(readonly path: NodePath<HookNode>) {
+    super();
+  }
 
-export function isHookPath(path: NodePath<t.CallExpression>): path is NodePath<HookNode> {
-  return isHookNode(path.node);
-}
-
-export function isHookNode(node: t.CallExpression): node is HookNode {
-  if (!t.isCallExpression(node)) return false;
-  if (!t.isMemberExpression(node.callee)) return false;
-  if (!t.isIdentifier(node.callee.object)) return false;
-  if (!t.isIdentifier(node.callee.property)) return false;
-
-  return true;
+  abstract traverse(): void;
 }
