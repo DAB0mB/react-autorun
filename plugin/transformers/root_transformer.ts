@@ -4,6 +4,7 @@ import { HookNode, HookTransformer, isHookPath } from './hook_transformer.js';
 import { Transformer } from './transformer.js';
 import { UseRefTransformer } from './use_ref_transformer.js';
 import { UseStateTransformer } from './use_state_transformer.js';
+import { UseCallbackTransformer } from './use_callback_transformer.js';
 
 export type RootTransformerConfig = {
   moduleName: string,
@@ -68,6 +69,7 @@ export class RootTransformer extends Transformer {
     if (!this.isModuleReference(path.scope, path.node.callee.object)) return;
 
     switch (path.node.callee.property.name) {
+      case 'useCallback': return new UseCallbackTransformer();
       case 'useState': return new UseStateTransformer();
       case 'useRef': return new UseRefTransformer();
     }
