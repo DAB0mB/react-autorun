@@ -1,3 +1,3 @@
-import { UseCallbackTransformer } from './use_callback_transformer.js';
+import { DependentHookTransformer } from './dependent_hook_transformer.js';
 
-export class UseInsertionEffectTransformer extends UseCallbackTransformer {}
+export class UseInsertionEffectTransformer extends DependentHookTransformer {}

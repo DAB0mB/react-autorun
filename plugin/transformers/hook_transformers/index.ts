@@ -3,7 +3,7 @@ import * as t from '@babel/types';
 import { Config } from '../../config.js';
 import { getIdentifierSource } from '../../utils/ast.js';
 import { HookTransformer, isDirectCallExpressionPath, isMemberCallExpressionPath } from '../hook_transformers/hook_transformer.js';
-import { UseCallbackTransformer } from '../hook_transformers/use_callback_transformer.js';
+import { UseCallbackTransformer } from './use_callback_transformer.js';
 import { UseEffectTransformer } from './use_effect_transformer.js';
 import { UseInsertionEffectTransformer } from './use_insertion_effect_transformer.js';
 import { UseLayoutEffectTransformer } from './use_layout_effect_transformer.js';
@@ -32,7 +32,7 @@ function getHook(path: NodePath<t.CallExpression>, config: Config) {
 
   if (isMemberCallExpressionPath(path)) {
     idPath = path.get('callee').get('object');
-    hookType = path.get('callee').get('property').node.name;
+    hookType = path.node.callee.property.name;
   }
   else if (isDirectCallExpressionPath(path)) {
     idPath = path.get('callee');
