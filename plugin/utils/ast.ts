@@ -1,21 +1,10 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
+import { weakMemo } from './function.js';
 
-export type Source = ReturnType<typeof getIdentifierSourceValue>;
+export type Source = ReturnType<typeof getIdentifierSource>;
 
-const getIdentifierSourceCache = new WeakMap<NodePath<t.Identifier>, Source | null>();
-
-export function getIdentifierSource(path: NodePath<t.Identifier>): Source | null {
-  let source = getIdentifierSourceCache.get(path);
-  if (source === undefined) {
-    source = getIdentifierSourceValue(path);
-    getIdentifierSourceCache.set(path, source);
-  }
-
-  return source;
-}
-
-function getIdentifierSourceValue(path: NodePath<t.Identifier>) {
+export const getIdentifierSource = weakMemo((path: NodePath<t.Identifier>) => {
   const binding = path.scope.getBinding(path.node.name);
   if (!binding) return null;
 
@@ -44,4 +33,4 @@ function getIdentifierSourceValue(path: NodePath<t.Identifier>) {
     specifier,
     declaration,
   };
-}
+});

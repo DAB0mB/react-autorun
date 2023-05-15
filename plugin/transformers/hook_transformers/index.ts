@@ -32,7 +32,7 @@ function getHook(path: NodePath<t.CallExpression>, config: Config) {
 
   if (isMemberCallExpressionPath(path)) {
     idPath = path.get('callee').get('object');
-    hookType = path.get('callee').get('property').get('name');
+    hookType = path.get('callee').get('property').node.name;
   }
   else if (isDirectCallExpressionPath(path)) {
     idPath = path.get('callee');
