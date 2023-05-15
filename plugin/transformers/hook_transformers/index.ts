@@ -1,8 +1,8 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { Config } from '../../config.js';
-import { getIdentifierSource } from '../../utils/ast.js';
-import { HookTransformer, isDirectCallExpressionPath, isMemberCallExpressionPath } from '../hook_transformers/hook_transformer.js';
+import { getImportedMember } from '../../utils/ast.js';
+import { HookTransformer, isHookPath } from '../hook_transformers/hook_transformer.js';
 import { UseCallbackTransformer } from './use_callback_transformer.js';
 import { UseEffectTransformer } from './use_effect_transformer.js';
 import { UseInsertionEffectTransformer } from './use_insertion_effect_transformer.js';
@@ -12,42 +12,19 @@ import { UseRefTransformer } from './use_ref_transformer.js';
 import { UseStateTransformer } from './use_state_transformer.js';
 
 export function createHookTransformer(path: NodePath<t.CallExpression>, config: Config): HookTransformer | undefined {
-  const hook = getHook(path, config);
-  if (!hook) return;
+  if (!isHookPath(path)) return;
 
-  switch (hook.type) {
-    case 'useCallback': return new UseCallbackTransformer(hook.path, config);
-    case 'useEffect': return new UseEffectTransformer(hook.path, config);
-    case 'useInsertionEffect': return new UseInsertionEffectTransformer(hook.path, config);
-    case 'useLayoutEffect': return new UseLayoutEffectTransformer(hook.path, config);
-    case 'useMemo': return new UseMemoTransformer(hook.path, config);
-    case 'useRef': return new UseRefTransformer(hook.path, config);
-    case 'useState': return new UseStateTransformer(hook.path, config);
+  const callee = path.get('callee');
+  const hook = getImportedMember(callee);
+  if (!hook || hook.source.declaration.source.value !== config.moduleName) return;
+
+  switch (hook.source.id.name) {
+    case 'useCallback': return new UseCallbackTransformer(path, config);
+    case 'useEffect': return new UseEffectTransformer(path, config);
+    case 'useInsertionEffect': return new UseInsertionEffectTransformer(path, config);
+    case 'useLayoutEffect': return new UseLayoutEffectTransformer(path, config);
+    case 'useMemo': return new UseMemoTransformer(path, config);
+    case 'useRef': return new UseRefTransformer(path, config);
+    case 'useState': return new UseStateTransformer(path, config);
   }
-}
-
-function getHook(path: NodePath<t.CallExpression>, config: Config) {
-  let idPath: NodePath<t.Identifier>;
-  let hookType: string;
-
-  if (isMemberCallExpressionPath(path)) {
-    idPath = path.get('callee').get('object');
-    hookType = path.node.callee.property.name;
-  }
-  else if (isDirectCallExpressionPath(path)) {
-    idPath = path.get('callee');
-  }
-  else {
-    return;
-  }
-
-  const source = getIdentifierSource(idPath);
-  if (!source || source.declaration.source.value !== config.moduleName) return;
-
-  hookType ??= source.id.name;
-
-  return {
-    path,
-    type: hookType,
-  };
 }

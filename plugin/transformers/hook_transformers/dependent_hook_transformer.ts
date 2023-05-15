@@ -1,7 +1,6 @@
 import { CodeGenerator } from '@babel/generator';
-import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { getIdentifierSource } from '../../utils/ast.js';
+import { getImportedMember } from '../../utils/ast.js';
 import { weakMemo } from '../../utils/function.js';
 import { HookTransformer } from './hook_transformer.js';
 
@@ -67,33 +66,13 @@ export class DependentHookTransformer extends HookTransformer {
         const init = path.get('init');
         if (!init.isCallExpression()) return;
 
-        let id: NodePath<t.Identifier>;
-        let hookType: string;
         const callee = init.get('callee');
-        if (callee.isIdentifier()) {
-          id = callee;
-          hookType = id.node.name;
-        }
-        else if (callee.isMemberExpression()) {
-          const object = callee.get('object');
-          if (!object.isIdentifier()) return;
+        const hook = getImportedMember(callee);
+        if (!hook) return;
 
-          const property = callee.get('property');
-          if (!property.isIdentifier()) return;
-
-          id = object;
-          hookType = property.node.name;
-        }
-        else {
-          return;
-        }
-
-        const source = getIdentifierSource(id);
-        if (!source) return;
-
-        const sourceModuleName = source.declaration.source.value;
+        const sourceModuleName = hook.source.declaration.source.value;
         if (sourceModuleName === this.config.moduleName) {
-          switch (hookType) {
+          switch (hook.name) {
             case 'useRef': {
               const left = path.get('id');
               if (!left.isIdentifier()) return;
@@ -102,12 +81,9 @@ export class DependentHookTransformer extends HookTransformer {
               return;
             }
           }
-
-          return;
         }
-
-        if (sourceModuleName === this.config.reactModuleName) {
-          switch (hookType) {
+        else if (sourceModuleName === this.config.reactModuleName) {
+          switch (hook.name) {
             case 'useReducer':
             case 'useState': {
               const left = path.get('id');

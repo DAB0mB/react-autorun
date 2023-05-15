@@ -29,10 +29,6 @@ export abstract class HookTransformer extends Transformer {
   }
 }
 
-export function isMemberCallExpressionPath(path: NodePath): path is NodePath<MemberCallExpression> {
-  return zMemberCallExpression.safeParse(path.node).success;
-}
-
-export function isDirectCallExpressionPath(path: NodePath): path is NodePath<DirectCallExpression> {
-  return zDirectCallExpression.safeParse(path.node).success;
+export function isHookPath(path: NodePath): path is NodePath<HookNode> {
+  return zMemberCallExpression.safeParse(path.node).success || zDirectCallExpression.safeParse(path.node).success;
 }
