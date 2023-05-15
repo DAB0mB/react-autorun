@@ -35,31 +35,28 @@ export class UseCallbackTransformer extends HookTransformer {
         if (!this.path.scope.getOwnBinding(object.name)) return;
 
         let dep = object.name;
+        if (this.getDepsIgnore().has(dep)) return;
+
         while (props.length > 1) {
           dep += props.shift();
         }
 
-        this.addDep(dep + props.shift());
+        this.deps.add(dep + props.shift());
         if (t.isCallExpression(path.parentPath.node)) {
-          this.addDep(dep);
+          this.deps.add(dep);
         }
       },
 
       Identifier: (path) => {
         if (t.isMemberExpression(path.parent)) return;
-        if (!this.path.scope.getOwnBinding(path.node.name)) return;
 
-        this.addDep(path.node.name);
+        const dep = path.node.name
+        if (!this.path.scope.getOwnBinding(dep)) return;
+        if (this.getDepsIgnore().has(dep)) return;
+
+        this.deps.add(dep);
       },
     });
-  }
-
-  addDep(dep: string) {
-    const depsIgnore = this.getDepsIgnore();
-
-    if (!depsIgnore.has(dep)) {
-      this.deps.add(dep);
-    }
   }
 
   private readonly getDepsIgnore = weakMemo(() => {
@@ -122,19 +119,12 @@ export class UseCallbackTransformer extends HookTransformer {
               depsIgnore.add(setterId.node.name);
               return;
             }
-            case 'useId': {
-              const left = path.get('id');
-              if (!left.isIdentifier()) return;
-
-              depsIgnore.add(left.node.name);
-              return;
-            }
+            case 'useId':
             case 'useRef': {
               const left = path.get('id');
               if (!left.isIdentifier()) return;
 
               depsIgnore.add(left.node.name);
-              depsIgnore.add(`${left.node.name}.current`);
               return;
             }
           }
