@@ -1,4 +1,5 @@
 import { CodeGenerator } from '@babel/generator';
+import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 import { getImportedMember } from '../../utils/ast.js';
 import { weakMemo } from '../../utils/function.js';
@@ -8,10 +9,8 @@ export class DependentHookTransformer extends HookTransformer {
   readonly deps = new Set<string>();
 
   transform() {
-    this.path.node.arguments.push(
-      t.arrayExpression(
-        [...this.deps].map(t.identifier)
-      )
+    this.path.node.arguments[1] = t.arrayExpression(
+      [...this.deps].map(t.identifier)
     );
   }
 
@@ -70,46 +69,34 @@ export class DependentHookTransformer extends HookTransformer {
         const hook = getImportedMember(callee);
         if (!hook) return;
 
-        const sourceModuleName = hook.source.declaration.source.value;
-        if (sourceModuleName === this.config.moduleName) {
-          switch (hook.name) {
-            case 'useRef': {
-              const left = path.get('id');
-              if (!left.isIdentifier()) return;
+        const moduleKey = this.config.getModuleKey(hook.source.declaration.source.value);
+        if (!moduleKey) return;
 
-              depsIgnore.add(left.node.name);
-              return;
-            }
-          }
-        }
-        else if (sourceModuleName === this.config.reactModuleName) {
-          switch (hook.name) {
-            case 'useReducer':
-            case 'useState': {
-              const left = path.get('id');
-              if (!left.isArrayPattern()) return;
-
-              const [, setterId] = left.get('elements');
-              if (!setterId.isIdentifier()) return;
-
-              depsIgnore.add(setterId.node.name);
-              return;
-            }
-            case 'useId':
-            case 'useRef': {
-              const left = path.get('id');
-              if (!left.isIdentifier()) return;
-
-              depsIgnore.add(left.node.name);
-              return;
-            }
-          }
-        }
+        const depName = getDepName(path.get('id'), `${moduleKey}/${hook.name}`);
+        depName && depsIgnore.add(depName);
       }
     });
 
     return depsIgnore;
   }, () => this.path.scope);
+}
+
+function getDepName(id: NodePath<t.LVal>, depSource: string) {
+  switch (depSource) {
+    case 'react/useState': {
+      if (!id.isArrayPattern()) return;
+
+      const [, setterId] = id.get('elements');
+      if (!setterId.isIdentifier()) return;
+
+      return setterId.node.name;
+    }
+    case 'react-useless/useRef':
+    case 'react/useId':
+    case 'react/useRef': {
+      return id.isIdentifier() ? id.node.name : undefined;
+    }
+  }
 }
 
 function generate(ast: t.Node) {

@@ -19,14 +19,14 @@ export class ProgramTransformer extends Transformer {
     }
 
     for (const importDeclaration of this.moduleImportDeclarations) {
-      importDeclaration.source.value = this.config.reactModuleName;
+      importDeclaration.source.value = this.config.getModuleName('react');
     }
   }
 
   traverse() {
     this.path.traverse({
       ImportDeclaration: (path) => {
-        if (path.node.source.value === this.config.moduleName) {
+        if (path.node.source.value === this.config.getModuleName('react-useless')) {
           this.moduleImportDeclarations.push(path.node);
         }
       },

@@ -16,7 +16,7 @@ export function createHookTransformer(path: NodePath<t.CallExpression>, config: 
 
   const callee = path.get('callee');
   const hook = getImportedMember(callee);
-  if (!hook || hook.source.declaration.source.value !== config.moduleName) return;
+  if (!hook || hook.source.declaration.source.value !== config.getModuleName('react-useless')) return;
 
   switch (hook.source.id.name) {
     case 'useCallback': return new UseCallbackTransformer(path, config);

@@ -3,10 +3,7 @@ import { Config } from './config.js';
 import { ProgramTransformer } from './transformers/program_transformer.js';
 
 export default function() {
-  const config: Config = {
-    moduleName: 'react-useless',
-    reactModuleName: 'react',
-  };
+  const config = new Config();
 
   return {
     visitor: {
