@@ -14,7 +14,7 @@ Load plugin:
 
 Use in React app:
 
-```ts
+```tsx
 // blackjack.tsx
 import { useEffect, useState } from 'react';
 import { autorun } from 'react-autorun';
@@ -70,12 +70,12 @@ export function Blackjack() {
 }
 ```
 
-It's recommended to ignore some dependencies:
+Optionally, you can tell autorun to ignore some variables; React hooks are patched out of the box:
 
 ```ts
 // utils/hooks.ts
-import { autorun } from 'react-autorun';
 import { useCallback, useInsertionEffect, useRef } from 'react';
+import { autorun } from 'react-autorun';
 
 export function useCaller<Fn extends (...args: any) => any>(fn: Fn) {
   const ref = useRef(callerRefInit as Fn);
@@ -88,9 +88,7 @@ export function useCaller<Fn extends (...args: any) => any>(fn: Fn) {
     return ref.current(...args);
   }, []) as Fn;
 
-  autorun.ignore(caller);
-
-  return caller;
+  return autorun.ignore(caller);
 }
 
 function callerRefInit() {
