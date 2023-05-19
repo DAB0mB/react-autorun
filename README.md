@@ -70,7 +70,7 @@ export function Blackjack() {
 }
 ```
 
-Optionally, you can tell autorun to ignore some variables; React hooks are patched out of the box:
+Optionally, you can tell autorun to ignore some variables:
 
 ```ts
 // utils/hooks.ts
@@ -94,4 +94,26 @@ export function useCaller<Fn extends (...args: any) => any>(fn: Fn) {
 function callerRefInit() {
   throw new Error('Function not ready');
 }
+```
+
+Use `patchReact()` to autorun-ignore recommended React hooks:
+
+```tsx
+// index.tsx
+import * as React from 'react';
+import { patchReact } from 'react-autorun';
+import ReactDOM from 'react-dom/client';
+import App from './app';
+
+patchReact(React);
+
+const root = ReactDOM.createRoot(
+  document.getElementById('root') as HTMLElement
+);
+
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
 ```

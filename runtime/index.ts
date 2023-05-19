@@ -1,10 +1,8 @@
-import * as React from 'react';
+import type * as ReactModule from 'react';
 
 type ReactDeps = unknown[];
 
 export const autorun = createAutorun();
-
-patchReact();
 
 function createAutorun() {
   const ignoreValue = {};
@@ -40,7 +38,7 @@ function createAutorun() {
 }
 
 // Source: https://github.com/facebook/react/blob/5309f102854475030fb91ab732141411b49c1126/packages/eslint-plugin-react-hooks/src/ExhaustiveDeps.js#L151
-function patchReact() {
+export function patchReact(React: typeof ReactModule) {
   const { useState, useReducer, useRef } = React;
 
   Object.assign(React, {
