@@ -8,29 +8,10 @@ export default (): { visitor: Visitor } => {
 
   return {
     visitor: {
-      Program: {
-        enter: (program) => {
-          autorunImportSpecifiers = getAutorunImportSpecifiers(program.scope);
-        },
-        exit: () => {
-          for (const [autorun, deps] of depsByAutorun) {
-            autorun.replaceWith(
-              t.callExpression(
-                autorun.node,
-                [
-                  t.arrowFunctionExpression(
-                    [],
-                    t.arrayExpression(
-                      deps.map(dep => t.identifier(dep)),
-                    ),
-                  ),
-                ],
-              )
-            );
-          }
-        },
+      Program(program) {
+        autorunImportSpecifiers = getAutorunImportSpecifiers(program.scope);
       },
-      CallExpression: (callExpression) => {
+      CallExpression(callExpression) {
         const callback = callExpression.get('arguments')[0];
         if (!callback) return;
         if (!callback.isFunctionExpression() && !callback.isArrowFunctionExpression()) return;
@@ -43,6 +24,20 @@ export default (): { visitor: Visitor } => {
 
         const deps = getFunctionExpressionDeps(callback);
         depsByAutorun.set(autorun, Array.from(deps));
+
+        autorun.replaceWith(
+          t.callExpression(
+            autorun.node,
+            [
+              t.arrowFunctionExpression(
+                [],
+                t.arrayExpression(
+                  Array.from(deps).map(dep => t.identifier(dep)),
+                ),
+              ),
+            ],
+          )
+        );
       },
     },
   };

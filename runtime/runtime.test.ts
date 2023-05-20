@@ -1,7 +1,7 @@
 import { deepEqual, equal } from 'node:assert';
 import { test } from 'node:test';
 import type * as ReactModule from 'react';
-import { autorun, patchReact } from '.';
+import { autorun, patchReact } from './runtime';
 
 test('autorun', async (t) => {
   await t.test('returns an identity array if no dependency is ignored', () => {

@@ -12,7 +12,6 @@ const transformation = babel.transform(code, {
     plugin,
   ],
   code: true,
-  ast: false,
 });
 
 if (transformation?.code) {
