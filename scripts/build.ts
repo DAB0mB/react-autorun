@@ -1,6 +1,6 @@
-const esbuild = require('esbuild');
-const { resolve } = require('path');
-const { performance } = require('perf_hooks');
+import * as esbuild from 'esbuild';
+import { resolve } from 'path';
+import { performance } from 'perf_hooks';
 
 const startTime = performance.now();
 

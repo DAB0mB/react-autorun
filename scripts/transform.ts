@@ -1,7 +1,7 @@
-const babel = require('@babel/core');
-const fs = require('fs');
-const plugin = require('../babel');
-const path = require('path');
+import * as babel from '@babel/core';
+import * as fs from 'fs';
+import * as plugin from '../babel';
+import * as path from 'path';
 
 const transformDir = path.resolve(__dirname, '../transform');
 const code = fs.readFileSync(`${transformDir}/in.tsx`).toString();

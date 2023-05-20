@@ -1,10 +1,10 @@
 {
   "name": "react-autorun",
   "private": true,
-  "main": "runtime/index.js",
+  "main": "runtime",
   "scripts": {
-    "build": "node scripts/build.js",
-    "transform": "node scripts/transform.js",
+    "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
+    "transform": "node -r @esbuild-kit/cjs-loader scripts/transform.ts",
     "test": "node -r @esbuild-kit/cjs-loader --test **/*.test.ts",
     "prepack": "npm run build"
   },
