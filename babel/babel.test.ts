@@ -1,9 +1,11 @@
 import { transform } from '@babel/core';
-import { NodePath, Visitor } from '@babel/traverse';
+import traverse, { NodePath, Visitor, visitors } from '@babel/traverse';
 import * as t from '@babel/types';
 import { equal } from 'node:assert';
 import { test } from 'node:test';
 import plugin from './babel';
+import { parse } from '@babel/parser';
+import { CodeGenerator } from '@babel/generator';
 
 test('babel plugin', async (t) => {
   await t.test('transforms autorun identifier into a call expression that returns an array of dependencies based on the block scope and the hook callback', () => {
@@ -26,36 +28,34 @@ test('babel plugin', async (t) => {
       }
     `;
 
-    const output = transform(input, {
-      plugins: [plugin, pluckAutorunCallExpression()],
-      code: true,
-    })!.code;
-
-    equal(output, 'autorun(() => [b]);');
+    equal(getTransformedAutorunCode(input), 'autorun(() => [b])');
   });
 });
 
-function pluckAutorunCallExpression(calleeName = 'autorun') {
-  return (): { visitor: Visitor } => {
-    let autorunPath: NodePath<t.CallExpression>;
+function getTransformedAutorunCode(input: string, autorunIdName = 'autorun') {
+  const ast = parse(input, { sourceType: 'module' });
+  let autorunNode: t.Node | null = null;
 
-    return {
-      visitor: {
-        Program: {
-          exit(path) {
-            if (!autorunPath) {
-              throw new Error('Autorun CallExpression not found');
-            }
-            path.node.body = [t.expressionStatement(autorunPath.node)];
-          },
-        },
+  const visitor = visitors.merge([plugin().visitor, {
+    CallExpression(path) {
+      if (path.get('callee').isIdentifier(({ name: autorunIdName }))) {
+        throw (autorunNode = path.node);
+      }
+    },
+  }]);
 
-        CallExpression(path) {
-          if (path.get('callee').isIdentifier(({ name: calleeName }))) {
-            autorunPath = path;
-          }
-        },
-      },
-    };
-  };
+  try {
+    traverse(ast, visitor);
+  }
+  catch (error) {
+    if (error !== autorunNode) {
+      throw error;
+    }
+  }
+
+  if (autorunNode == null) {
+    return autorunNode;
+  }
+
+  return new CodeGenerator(ast).generate().code;
 }
