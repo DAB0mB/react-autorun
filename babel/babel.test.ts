@@ -62,6 +62,26 @@ test('babel plugin', async (t) => {
     equal(getTransformedAutorunCode(input), 'autorun(() => [caller.callee, caller])');
   });
 
+  await t.test('includes no dependency duplicates', () => {
+    const input = `
+      import { autorun } from 'react-autorun';
+
+      {
+        let caller;
+        let object;
+
+        useHook(() => {
+          caller.callee;
+          caller;
+          object.member.expression;
+          object.member.expression;
+        }, autorun);
+      }
+    `;
+
+    equal(getTransformedAutorunCode(input), 'autorun(() => [caller.callee, caller, object.member.expression])');
+  });
+
   await t.test('transforms autorun alias', () => {
     const input = `
       import { autorun as autorunAlias } from 'react-autorun';
