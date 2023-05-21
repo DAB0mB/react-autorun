@@ -21,13 +21,15 @@
     "test": "node -r @esbuild-kit/cjs-loader --test **/*.test.ts",
     "prepack": "npm run build"
   },
+  "dependencies": {
+    "@babel/generator": "^7.21.5",
+    "@babel/traverse": "^7.21.5",
+    "@babel/types": "^7.21.5"
+  },
   "devDependencies": {
     "@babel/core": "^7.21.8",
-    "@babel/generator": "^7.21.5",
     "@babel/parser": "^7.21.8",
     "@babel/plugin-transform-typescript": "^7.21.3",
-    "@babel/traverse": "^7.21.5",
-    "@babel/types": "^7.21.5",
     "@esbuild-kit/cjs-loader": "^2.4.2",
     "@types/babel__core": "^7.20.0",
     "@types/node": "^20.2.1",
