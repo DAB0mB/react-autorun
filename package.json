@@ -1,5 +1,6 @@
 {
   "name": "react-autorun",
+  "description": "A macro that compiles into a dependencies array for hooks.",
   "private": true,
   "version": "0.0.1",
   "main": "runtime",

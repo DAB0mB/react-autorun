@@ -1,5 +1,7 @@
 # React Autorun
 
+A macro that compiles into a dependencies array for hooks.
+
 ## Usage
 
 Load plugin:
