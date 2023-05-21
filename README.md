@@ -116,7 +116,6 @@ Next, load the plugin in your `.babelrc` configuration file:
 
 ```json
 {
-  "presets": ["next/babel"],
   "plugins": ["react-autorun/babel"]
 }
 ```
