@@ -1,6 +1,14 @@
 # React Autorun
 
-A macro that compiles into a dependencies array for hooks. React Autorun also comes with a tiny runtime that lets you control the behavior of the dependencies, i.e., you can ignore objects from ever being included as dependencies. To better illustrate it, here's an example of a "before" and "after" a compilation.
+React Autorun is a powerful macro that simplifies the management of dependencies for hooks in React. It offers a seamless way to specify dependencies while providing control over their behavior. With React Autorun, you can easily ignore specific objects from being included as dependencies, eliminating the need for workarounds like wrapping values with `useRef`.
+
+## Key Features
+
+- **Automatic Dependency Tracking**: React Autorun eliminates the need to manually specify dependencies by automatically generating the dependencies array for your hooks at compile-time.
+- **Flexible Ignoring of Values**: You can mark certain values as ignored, ensuring they are not considered as dependencies during runtime.
+- **Works With Any Hook**: React Autorun decouples the dependencies' logic from the hook type, allowing you to specify dependencies for any hook, not just React's hooks.
+
+## Before and After Compilation
 
 Before:
 
@@ -12,7 +20,7 @@ import { createGame } from '../game/game';
 import { GameBoard } from './game_board';
 
 export function Blackjack() {
-  const [game, setGame] = useState(creaetGame);
+  const [game, setGame] = useState(createGame);
 
   useEffect(() => {
     const unlistenToRestart = game.restartEvent.listen(() => {
@@ -42,7 +50,7 @@ import { createGame } from '../game/game';
 import { GameBoard } from './game_board';
 
 export function Blackjack() {
-  const [game, setGame] = useState(creaetGame);
+  const [game, setGame] = useState(createGame);
 
   useEffect(() => {
     const unlistenToRestart = game.restartEvent.listen(() => {
@@ -62,7 +70,13 @@ export function Blackjack() {
 }
 ```
 
-If you would like an object to be ignored by an autorun, you can wrap it with `autorun.ignore()`:
+The "after" code showcases how React Autorun can transform the dependencies array for hooks, providing a more streamlined and intuitive approach.
+
+## Ignoring Values with `autorun.ignore`
+
+React Autorun provides a way to ignore specific values from being treated as dependencies. Some React hook values, such as `useState()`, `useReducer()`, and `useRef()`, are already ignored by the compiler out of the box.
+
+Here's an example that demonstrates using `autorun.ignore()` to exclude a value from the dependencies:
 
 ```tsx
 import { useCallback, useInsertionEffect, useRef } from 'react';
@@ -79,7 +93,7 @@ export function useCaller<Fn extends (...args: any) => any>(fn: Fn) {
     return ref.current(...args);
   }, autorun) as Fn;
 
-  // `useCaller()` return value is now ignored by effects
+  // `useCaller()` return value is now ignored by hooks
   return autorun.ignore(caller);
 }
 
@@ -88,17 +102,17 @@ function callerRefInit() {
 }
 ```
 
-Some objects that were yielded from React hook calls will be ignored automatically during compilation time, i.e., `useState()[1]`, `useReducer()[1]`, and `useRef()`.
+With this usage of autorun.ignore, the caller value returned by `useCaller()` will be excluded as a dependency when used within other hooks. This ensures that the hook won't be invalidated if, for some particular reason, the caller reference has changed.
 
 ## Usage
 
-Install:
+To install React Autorun, use npm:
 
 ```
 npm install react-autorun
 ```
 
-And load plugin using `.babelrc`:
+Next, load the plugin in your `.babelrc` configuration file:
 
 ```json
 {
@@ -107,8 +121,8 @@ And load plugin using `.babelrc`:
 }
 ```
 
-SWC plugin is not yet available.
+I'm currently exploring the possibility of implementing a [Next.js SWC plugin](https://nextjs.org/docs/architecture/nextjs-compiler#swc-plugins-experimental) for React Autorun as part of its ongoing development. Once the library demonstrates a strong market-fit and stability, I'll prioritize the development of the SWC plugin. Please keep in mind that React Autorun is still in the experimental phase, and your feedback and contributions are highly appreciated.
 
-## LICENSE
+## License
 
-MIT
+React Autorun is licensed under the MIT license. See the [LICENSE](./LICENSE) file for more details.
