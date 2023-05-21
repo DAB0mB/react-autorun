@@ -6,7 +6,7 @@ React Autorun is a powerful macro that simplifies the management of dependencies
 
 - **Automatic Dependency Tracking**: React Autorun eliminates the need to manually specify dependencies by automatically generating the dependencies array for your hooks at compile-time.
 - **Flexible Ignoring of Values**: You can mark certain values as ignored, ensuring they are not considered as dependencies during runtime.
-- **Works With Any Hook**: React Autorun decouples the dependencies' logic from the hook type, allowing you to specify dependencies for any hook, not just React's hooks.
+- **Works with Any Hook**: React Autorun decouples the dependencies' logic from the hook type, allowing you to specify dependencies for any hook, not just React's hooks.
 
 ## Before and After Compilation
 
@@ -102,7 +102,7 @@ function callerRefInit() {
 }
 ```
 
-With this usage of autorun.ignore, the caller value returned by `useCaller()` will be excluded as a dependency when used within other hooks. This ensures that the hook won't be invalidated if, for some particular reason, the caller reference has changed.
+With this usage of `autorun.ignore`, the caller value returned by `useCaller()` will be excluded as a dependency when used within other hooks. This ensures that the hook won't be invalidated if, for some particular reason, the caller reference has changed.
 
 ## Usage
 
