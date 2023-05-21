@@ -43,7 +43,23 @@ test('babel plugin', async (t) => {
       }
     `;
 
-    equal(getTransformedAutorunCode(input), 'autorun(() => [object.member.expression])');
+    equal(getTransformedAutorunCode(input), 'autorun(() => [object?.member?.expression])');
+  });
+
+  await t.test('includes no dependency duplicates', () => {
+    const input = `
+      import { autorun } from 'react-autorun';
+
+      {
+        let object;
+
+        useHook(() => {
+          object['member'].expression;
+        }, autorun);
+      }
+    `;
+
+    equal(getTransformedAutorunCode(input), 'autorun(() => [object?.["member"]?.expression])');
   });
 
   await t.test('includes caller if callee is a member expression', () => {
@@ -59,27 +75,11 @@ test('babel plugin', async (t) => {
       }
     `;
 
-    equal(getTransformedAutorunCode(input), 'autorun(() => [caller.callee, caller])');
+    equal(getTransformedAutorunCode(input), 'autorun(() => [caller?.callee, caller])');
   });
 
-  await t.test('includes no dependency duplicates', () => {
-    const input = `
-      import { autorun } from 'react-autorun';
+  await t.test('includes computed properties of member expressions', () => {
 
-      {
-        let caller;
-        let object;
-
-        useHook(() => {
-          caller.callee;
-          caller;
-          object.member.expression;
-          object.member.expression;
-        }, autorun);
-      }
-    `;
-
-    equal(getTransformedAutorunCode(input), 'autorun(() => [caller.callee, caller, object.member.expression])');
   });
 
   await t.test('transforms autorun alias', () => {
@@ -199,16 +199,20 @@ test('babel plugin', async (t) => {
 });
 
 function getTransformedAutorunCode(input: string, autorunIdName = 'autorun') {
-  const ast = parse(input, { sourceType: 'module' });
-  let autorunNode: t.Node | null = null;
+  const ast = parse(input, {
+    sourceType: 'module',
+    plugins: ['optionalChaining'],
+  });
 
-  const visitor = visitors.merge([plugin().visitor, {
+  let autorunNode: t.Node | null = null;
+  const throwAutorunNode = {
     CallExpression(path) {
       if (path.get('callee').isIdentifier(({ name: autorunIdName }))) {
         throw (autorunNode = path.node);
       }
     },
-  }]);
+  };
+  const visitor = visitors.merge([plugin().visitor, throwAutorunNode]);
 
   try {
     traverse(ast, visitor);

@@ -93,7 +93,7 @@ function getFunctionExpressionDeps(path: NodePath<t.ArrowFunctionExpression | t.
       let object: t.Node = memberExpression.node;
       const props: string[] = [];
       while (t.isMemberExpression(object)) {
-        props.unshift(object.computed ? `[${generate(object.property)}]` : `.${(object.property as t.Identifier).name}`);
+        props.unshift(object.computed ? `?.[${generate(object.property)}]` : `?.${(object.property as t.Identifier).name}`);
         object = object.object;
       }
 
