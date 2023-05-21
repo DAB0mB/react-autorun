@@ -8,18 +8,15 @@ Before:
 import { useEffect, useState } from 'react';
 import { autorun } from 'react-autorun';
 import { GameContext } from '../game/context';
-import { Game, createGame } from '../game/game';
-import css from './blackjack.module.css';
+import { createGame } from '../game/game';
 import { GameBoard } from './game_board';
 
 export function Blackjack() {
-  const [game, setGame] = useState<Game>();
+  const [game, setGame] = useState(creaetGame);
 
   useEffect(() => {
-    if (!game) return;
-
     const unlistenToRestart = game.restartEvent.listen(() => {
-      setGame(undefined);
+      setGame(createGame());
     });
 
     return () => {
@@ -27,34 +24,10 @@ export function Blackjack() {
     };
   }, autorun);
 
-  useEffect(() => {
-    if (game) return;
-
-    let mounted = true;
-
-    createGame().then((game) => {
-      mounted && setGame(game);
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, autorun);
-
-  const render = () => {
-    if (!game) return null;
-
-    return (
-      <GameContext.Provider value={game}>
-        <GameBoard />
-      </GameContext.Provider>
-    );
-  };
-
   return (
-    <div className={css.blackjack}>
-      {render()}
-    </div>
+    <GameContext.Provider value={game}>
+      <GameBoard />
+    </GameContext.Provider>
   );
 }
 ```
@@ -65,53 +38,26 @@ After:
 import { useEffect, useState } from 'react';
 import { autorun } from 'react-autorun';
 import { GameContext } from '../game/context';
-import { Game, createGame } from '../game/game';
-import css from './blackjack.module.css';
+import { createGame } from '../game/game';
 import { GameBoard } from './game_board';
 
 export function Blackjack() {
-  const [game, setGame] = useState<Game>();
+  const [game, setGame] = useState(creaetGame);
 
   useEffect(() => {
-    if (!game) return;
-
     const unlistenToRestart = game.restartEvent.listen(() => {
-      setGame(undefined);
+      setGame(createGame());
     });
 
     return () => {
       unlistenToRestart();
     };
-  }, autorun(() => [game, game?.restartEvent?.listen, game?.restartEvent]));
-
-  useEffect(() => {
-    if (game) return;
-
-    let mounted = true;
-
-    createGame().then((game) => {
-      mounted && setGame(game);
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, autorun(() => [game]));
-
-  const render = () => {
-    if (!game) return null;
-
-    return (
-      <GameContext.Provider value={game}>
-        <GameBoard />
-      </GameContext.Provider>
-    );
-  };
+  }, autorun(() => [game?.restartEvent?.listen, game?.restartEvent]));
 
   return (
-    <div className={css.blackjack}>
-      {render()}
-    </div>
+    <GameContext.Provider value={game}>
+      <GameBoard />
+    </GameContext.Provider>
   );
 }
 ```
@@ -127,12 +73,13 @@ export function useCaller<Fn extends (...args: any) => any>(fn: Fn) {
 
   useInsertionEffect(() => {
     ref.current = fn;
-  }, [fn]);
+  }, autorun);
 
   const caller = useCallback((...args: any) => {
     return ref.current(...args);
-  }, []) as Fn;
+  }, autorun) as Fn;
 
+  // `useCaller()` return value is now ignored by effects
   return autorun.ignore(caller);
 }
 
@@ -141,7 +88,7 @@ function callerRefInit() {
 }
 ```
 
-Some objects that were yielded from React hooks will be ignored automatically during compilation, i.e., `useState()[1]`, `useReducer()[1]`, and `useRef()`.
+Some objects that were yielded from React hook calls will be ignored automatically during compilation time, i.e., `useState()[1]`, `useReducer()[1]`, and `useRef()`.
 
 ## Usage
 

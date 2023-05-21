@@ -1,1 +1,1 @@
-export { autorun, patchReact } from './runtime';
+export { autorun } from './runtime';
