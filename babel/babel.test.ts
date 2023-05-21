@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import plugin from './babel';
 
 test('babel plugin', async (t) => {
-  await t.test('transforms autorun identifier into a call expression that returns an array of dependencies based on the block scope and the hook callback', { only: true }, () => {
+  await t.test('transforms autorun identifier into a call expression that returns an array of dependencies based on the block scope and the hook callback', () => {
     const input = `
       import { autorun } from 'react-autorun';
 
@@ -106,6 +106,31 @@ test('babel plugin', async (t) => {
     equal(getTransformedAutorunCode(input), null);
   });
 
+  await t.test('does not transform ignore calls', () => {
+    const input = `
+      import { autorun } from 'react-autorun';
+
+      let a;
+
+      {
+        let b;
+
+        autorun.ignore(b);
+
+        useHook(() => {
+          let c;
+
+          a;
+          b;
+          c;
+          d;
+        }, autorun);
+      }
+    `;
+
+    equal(getTransformedAutorunCode(input), 'autorun(() => [b])');
+  });
+
   await t.test('handles commonjs', () => {
     const input = `
       const { autorun } = require('react-autorun');
@@ -149,7 +174,7 @@ test('babel plugin', async (t) => {
       }
     `;
 
-    equal(getTransformedAutorunCode(input, 'autorunAlias'), 'autorun(() => [b])');
+    equal(getTransformedAutorunCode(input, 'autorunAlias'), 'autorunAlias(() => [b])');
   });
 });
 

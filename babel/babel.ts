@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 
 export default (): { visitor: Visitor } => {
   const depsByAutorun = new Map<NodePath<t.Identifier>, string[]>();
-  let autorunImportSpecifiers!: Set<NodePath>;
+  let autorunImportSpecifiers!: Map<string, NodePath>;
 
   return {
     visitor: {
@@ -12,15 +12,15 @@ export default (): { visitor: Visitor } => {
         autorunImportSpecifiers = getAutorunImportSpecifiers(program.scope);
       },
       CallExpression(callExpression) {
-        const callback = callExpression.get('arguments')[0];
+        const callback = callExpression.get('arguments').at(0);
         if (!callback) return;
         if (!callback.isFunctionExpression() && !callback.isArrowFunctionExpression()) return;
 
-        const autorun = callExpression.get('arguments')[1];
+        const autorun = callExpression.get('arguments').at(1);
         if (!autorun || !autorun.isIdentifier()) return;
 
         const autorunBinding = callExpression.scope.getBinding(autorun.node.name);
-        if (!autorunBinding || !autorunImportSpecifiers.has(autorunBinding.path)) return;
+        if (!autorunBinding || autorunImportSpecifiers.get(autorun.node.name) !== autorunBinding.path) return;
 
         const deps = getFunctionExpressionDeps(callback);
         depsByAutorun.set(autorun, Array.from(deps));
@@ -44,15 +44,37 @@ export default (): { visitor: Visitor } => {
 };
 
 function getAutorunImportSpecifiers(scope: Scope) {
-  const specifiers = new Set<NodePath<t.ImportSpecifier>>();
+  const specifiers = new Map<string, NodePath>();
 
   scope.path.traverse({
-    ImportDeclaration: (importDeclaration) => {
+    // ES modules
+    ImportDeclaration(importDeclaration) {
       if (!importDeclaration.get('source').isStringLiteral({ value: 'react-autorun' })) return;
 
       for (const specifier of importDeclaration.get('specifiers')) {
         if (specifier.isImportSpecifier() && specifier.get('imported').isIdentifier({ name: 'autorun' })) {
-          specifiers.add(specifier);
+          specifiers.set(specifier.node.local.name, specifier);
+        }
+      }
+    },
+    // CommonJS
+    VariableDeclarator(variableDeclarator) {
+      const init = variableDeclarator.get('init');
+      if (!init.isCallExpression()) return;
+      if (!init.get('callee').isIdentifier({ name: 'require' })) return;
+      if (!init.get('arguments').at(0)?.isStringLiteral({ value: 'react-autorun' })) return;
+
+      const id = variableDeclarator.get('id');
+      if (!id.isObjectPattern()) return;
+
+      for (const property of id.get('properties')) {
+        if (!property.isObjectProperty()) continue;
+
+        const key = property.get('key');
+        const value = property.get('value');
+
+        if (key.isIdentifier({ name: 'autorun' }) && value.isIdentifier()) {
+          specifiers.set(value.node.name, variableDeclarator);
         }
       }
     },
