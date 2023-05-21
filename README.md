@@ -1,23 +1,10 @@
 # React Autorun
 
-A macro that compiles into a dependencies array for hooks.
+A macro that compiles into a dependencies array for hooks. React Autorun also comes with a tiny runtime that lets you control the behavior of the dependencies, i.e., you can ignore objects from ever being included as dependencies. To better illustrate it, here's an example of a "before" and "after" a compilation.
 
-## Usage
-
-Load plugin:
-
-```json
-// .babelrc
-{
-  "presets": ["next/babel"],
-  "plugins": ["react-autorun/babel"]
-}
-```
-
-Use in React app:
+Before:
 
 ```tsx
-// blackjack.tsx
 import { useEffect, useState } from 'react';
 import { autorun } from 'react-autorun';
 import { GameContext } from '../game/context';
@@ -72,10 +59,66 @@ export function Blackjack() {
 }
 ```
 
-Optionally, you can tell autorun to ignore some variables:
+After:
 
-```ts
-// utils/hooks.ts
+```tsx
+import { useEffect, useState } from 'react';
+import { autorun } from 'react-autorun';
+import { GameContext } from '../game/context';
+import { Game, createGame } from '../game/game';
+import css from './blackjack.module.css';
+import { GameBoard } from './game_board';
+
+export function Blackjack() {
+  const [game, setGame] = useState<Game>();
+
+  useEffect(() => {
+    if (!game) return;
+
+    const unlistenToRestart = game.restartEvent.listen(() => {
+      setGame(undefined);
+    });
+
+    return () => {
+      unlistenToRestart();
+    };
+  }, autorun(() => [game, game?.restartEvent?.listen, game?.restartEvent]));
+
+  useEffect(() => {
+    if (game) return;
+
+    let mounted = true;
+
+    createGame().then((game) => {
+      mounted && setGame(game);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, autorun(() => [game]));
+
+  const render = () => {
+    if (!game) return null;
+
+    return (
+      <GameContext.Provider value={game}>
+        <GameBoard />
+      </GameContext.Provider>
+    );
+  };
+
+  return (
+    <div className={css.blackjack}>
+      {render()}
+    </div>
+  );
+}
+```
+
+If you would like an object to be ignored by an autorun, you can wrap it with `autorun.ignore()`:
+
+```tsx
 import { useCallback, useInsertionEffect, useRef } from 'react';
 import { autorun } from 'react-autorun';
 
@@ -98,24 +141,27 @@ function callerRefInit() {
 }
 ```
 
-Use `patchReact()` to autorun-ignore recommended React hooks:
+Some objects that were yielded from React hooks will be ignored automatically during compilation, i.e., `useState()[1]`, `useReducer()[1]`, and `useRef()`.
 
-```tsx
-// index.tsx
-import * as React from 'react';
-import { patchReact } from 'react-autorun';
-import ReactDOM from 'react-dom/client';
-import App from './app';
+## Usage
 
-patchReact(React);
+Install:
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
 ```
+npm install react-autorun
+```
+
+And load plugin using `.babelrc`:
+
+```json
+{
+  "presets": ["next/babel"],
+  "plugins": ["react-autorun/babel"]
+}
+```
+
+SWC plugin is not yet available.
+
+## LICENSE
+
+MIT

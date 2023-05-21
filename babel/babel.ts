@@ -3,13 +3,18 @@ import { NodePath, Scope, Visitor } from '@babel/traverse';
 import * as t from '@babel/types';
 
 export default (): { visitor: Visitor } => {
-  const depsByAutorun = new Map<NodePath<t.Identifier>, string[]>();
   let autorunImportSpecifiers!: Map<string, NodePath>;
+  let useStateImportSpecifiers!: Map<string, NodePath>;
+  let useReducerImportSpecifiers!: Map<string, NodePath>;
+  let useRefImportSpecifiers!: Map<string, NodePath>;
 
   return {
     visitor: {
       Program(program) {
-        autorunImportSpecifiers = getAutorunImportSpecifiers(program.scope);
+        autorunImportSpecifiers = getImportSpecifiers(program.scope, 'autorun', 'react-autorun');
+        useStateImportSpecifiers = getImportSpecifiers(program.scope, 'useState', 'react');
+        useReducerImportSpecifiers = getImportSpecifiers(program.scope, 'useReducer', 'react');
+        useRefImportSpecifiers = getImportSpecifiers(program.scope, 'useRef', 'react');
       },
       CallExpression(callExpression) {
         const callback = callExpression.get('arguments').at(0);
@@ -22,37 +27,66 @@ export default (): { visitor: Visitor } => {
         const autorunBinding = callExpression.scope.getBinding(autorun.node.name);
         if (!autorunBinding || autorunImportSpecifiers.get(autorun.node.name) !== autorunBinding.path) return;
 
-        const deps = getFunctionExpressionDeps(callback);
-        depsByAutorun.set(autorun, Array.from(deps));
+        // Exclude some dependencies that were yielded from React hooks
+        // Source: https://github.com/facebook/react/blob/5309f102854475030fb91ab732141411b49c1126/packages/eslint-plugin-react-hooks/src/ExhaustiveDeps.js#L151
+        const deps = getFunctionExpressionDeps(callback, (dep) => {
+          const depBidning = callExpression.scope.getOwnBinding(dep);
+          if (!depBidning) return true;
+
+          const depVariableDeclarator = depBidning.path;
+          if (!depVariableDeclarator.isVariableDeclarator()) return true;
+
+          const depInit = depVariableDeclarator.get('init');
+          if (!depInit.isCallExpression()) return true;
+
+          const depCallee = depInit.get('callee');
+          if (!depCallee.isIdentifier()) return true;
+
+          const depCalleeBinding = callExpression.scope.getBinding(depCallee.node.name);
+          if (!depCalleeBinding) return true;
+
+          const isRef = useRefImportSpecifiers.get(depCallee.node.name) === depCalleeBinding.path;
+          if (isRef) return false;
+
+          const isState = (
+            useStateImportSpecifiers.get(depCallee.node.name) === depCalleeBinding.path ||
+            useReducerImportSpecifiers.get(depCallee.node.name) === depCalleeBinding.path
+          );
+          if (!isState) return true;
+
+          const depId = depVariableDeclarator.get('id');
+          if (!depId.isArrayPattern()) return true;
+
+          const [, depSetStateId] = depId.get('elements');
+          if (!depSetStateId?.isIdentifier()) return true;
+
+          return dep !== depSetStateId.node.name;
+        });
 
         autorun.replaceWith(
-          t.callExpression(
-            autorun.node,
-            [
-              t.arrowFunctionExpression(
-                [],
-                t.arrayExpression(
-                  Array.from(deps).map(dep => t.identifier(dep)),
-                ),
+          t.callExpression(autorun.node, [
+            t.arrowFunctionExpression([],
+              t.arrayExpression(
+                deps.map(dep => t.identifier(dep)),
               ),
-            ],
-          )
+            ),
+          ]),
         );
       },
     },
   };
 };
 
-function getAutorunImportSpecifiers(scope: Scope) {
+function getImportSpecifiers(scope: Scope, idName: string, moduleName: string) {
   const specifiers = new Map<string, NodePath>();
 
   scope.path.traverse({
     // ES modules
     ImportDeclaration(importDeclaration) {
-      if (!importDeclaration.get('source').isStringLiteral({ value: 'react-autorun' })) return;
+      if (!importDeclaration.get('source').isStringLiteral({ value: moduleName })) return;
 
       for (const specifier of importDeclaration.get('specifiers')) {
-        if (specifier.isImportSpecifier() && specifier.get('imported').isIdentifier({ name: 'autorun' })) {
+        if (specifier.isImportSpecifier() && specifier.get('imported').isIdentifier({ name: idName })) {
           specifiers.set(specifier.node.local.name, specifier);
         }
       }
@@ -62,7 +96,7 @@ function getAutorunImportSpecifiers(scope: Scope) {
       const init = variableDeclarator.get('init');
       if (!init.isCallExpression()) return;
       if (!init.get('callee').isIdentifier({ name: 'require' })) return;
-      if (!init.get('arguments').at(0)?.isStringLiteral({ value: 'react-autorun' })) return;
+      if (!init.get('arguments').at(0)?.isStringLiteral({ value: moduleName })) return;
 
       const id = variableDeclarator.get('id');
       if (!id.isObjectPattern()) return;
@@ -73,7 +107,7 @@ function getAutorunImportSpecifiers(scope: Scope) {
         const key = property.get('key');
         const value = property.get('value');
 
-        if (key.isIdentifier({ name: 'autorun' }) && value.isIdentifier()) {
+        if (key.isIdentifier({ name: idName }) && value.isIdentifier()) {
           specifiers.set(value.node.name, variableDeclarator);
         }
       }
@@ -83,7 +117,10 @@ function getAutorunImportSpecifiers(scope: Scope) {
   return specifiers;
 }
 
-function getFunctionExpressionDeps(path: NodePath<t.ArrowFunctionExpression | t.FunctionExpression>) {
+function getFunctionExpressionDeps(
+  path: NodePath<t.ArrowFunctionExpression | t.FunctionExpression>,
+  filterFn: (dep: string) => boolean = () => true,
+) {
   const deps = new Set<string>();
 
   path.get('body').traverse({
@@ -99,6 +136,7 @@ function getFunctionExpressionDeps(path: NodePath<t.ArrowFunctionExpression | t.
 
       if (!t.isIdentifier(object)) return;
       if (!path.scope.parent.getOwnBinding(object.name)) return;
+      if (!filterFn(object.name)) return;
 
       let dep = object.name;
       while (props.length > 1) {
@@ -116,12 +154,13 @@ function getFunctionExpressionDeps(path: NodePath<t.ArrowFunctionExpression | t.
 
       const dep = identifier.node.name;
       if (!path.scope.parent.getOwnBinding(dep)) return;
+      if (!filterFn(dep)) return;
 
       deps.add(dep);
     },
   });
 
-  return deps;
+  return Array.from(deps);
 }
 
 function generate(ast: t.Node) {
