@@ -1,7 +1,20 @@
 {
   "name": "react-autorun",
   "private": true,
+  "version": "0.0.1",
   "main": "runtime",
+  "files": [
+    "package.json",
+    "README.md",
+    "babel/**/*.ts",
+    "!babel/**/*.test.ts",
+    "babel/index.js",
+    "babel/index.js.map",
+    "runtime/**/*.ts",
+    "!runtime/**/*.test.ts",
+    "runtime/index.js",
+    "runtime/index.js.map"
+  ],
   "scripts": {
     "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
     "transform": "node -r @esbuild-kit/cjs-loader scripts/transform.ts",
