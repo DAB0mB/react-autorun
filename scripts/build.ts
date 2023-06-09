@@ -1,4 +1,5 @@
 import * as esbuild from 'esbuild';
+import { execa } from 'execa';
 import { resolve } from 'path';
 import { performance } from 'perf_hooks';
 
@@ -34,10 +35,25 @@ Promise.allSettled([
       report,
     });
   }),
-]).then(results => {
-  const someErrors = results.some(result => result.status === 'rejected');
 
-  if (someErrors) {
+  execa('cargo', ['build-wasi', '--release'], {
+    cwd: resolve('swc'),
+  }).then((report) => {
+    console.log('Swc build', {
+      duration: measureDuration(),
+      report,
+    });
+  }),
+]).then(results => {
+  const errors = results.map(result => result.status === 'rejected' && result.reason).filter(Boolean);
+
+  if (errors.length) {
+    console.error(
+      new Error('Build completed with errors', {
+        cause: errors,
+      }),
+    );
+
     process.exit(1);
   }
 });
