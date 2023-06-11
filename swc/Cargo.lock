@@ -967,12 +967,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "react-autorun"
+name = "react_autorun"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
  "swc_core",
+ "testing",
 ]
 
 [[package]]

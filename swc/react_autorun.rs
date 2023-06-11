@@ -6,7 +6,7 @@ use swc_core::{ecma::{
 }, common::{DUMMY_SP}};
 use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
 
-struct AutorunTransformer {
+pub struct AutorunTransformer {
     ctxt_stack: Vec<u32>,
     parent_ctxt: u32,
     autorun_imports: ImportsExtractor,
@@ -16,7 +16,7 @@ struct AutorunTransformer {
 }
 
 impl AutorunTransformer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             ctxt_stack: vec![1],
             parent_ctxt: 0,
@@ -381,7 +381,7 @@ fn member_prop_to_path(prop_member: &MemberProp) -> String {
     path
 }
 
-pub struct RefSet {
+struct RefSet {
     hash_set: HashSet<u32>,
 }
 
