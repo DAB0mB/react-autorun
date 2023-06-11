@@ -1,0 +1,1 @@
+autorun(() => [object?.member?.expression])

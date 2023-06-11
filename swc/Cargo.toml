@@ -16,7 +16,6 @@ swc_core = { version = "0.76.*", features = ["ecma_plugin_transform", "ecma_util
 [dev-dependencies]
 serde = "1"
 serde_json = "1"
-env_logger = "0.10"
 testing = "0.33.13"
 
 [[test]]

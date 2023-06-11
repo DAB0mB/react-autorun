@@ -314,7 +314,7 @@ impl <'a> Visit for HookDepsExtractor<'a> {
             return;
         }
 
-        if !self.ignored_hooks.contains(obj_ident) {
+        if self.ignored_hooks.contains(obj_ident) {
             return;
         }
 

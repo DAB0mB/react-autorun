@@ -1,6 +1,5 @@
 mod react_autorun;
 
-use env_logger;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -19,6 +18,28 @@ use swc_core::{
         visit::{as_folder, VisitMut, VisitMutWith},
     },
 };
+
+#[testing::fixture("../test/fixture/**/input.ts")]
+fn fixture(input: PathBuf) {
+    let dirname = input.parent().unwrap();
+    let output = dirname.join("output.ts");
+    let config = dirname.join("config.json");
+    let config: Config = Config::from_file(&config).unwrap();
+
+    test_fixture(
+        Default::default(),
+        &|_| {
+            chain!(
+                resolver(Mark::new(), Mark::new(), true),
+                as_folder(AutorunTransformer::new()),
+                as_folder(PluckAutorunCallExpr::new(&config)),
+            )
+        },
+        &input,
+        &output,
+        Default::default(),
+    );
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Config {
@@ -101,27 +122,4 @@ impl <'a> VisitMut for PluckAutorunCallExpr<'a> {
             n.visit_mut_children_with(self);
         }
     }
-}
-
-#[testing::fixture("../test/fixture/**/input.ts")]
-fn fixture(input: PathBuf) {
-    env_logger::init();
-    let dirname = input.parent().unwrap();
-    let output = dirname.join("output.ts");
-    let config = dirname.join("config.json");
-    let config: Config = Config::from_file(&config).unwrap();
-
-    test_fixture(
-        Default::default(),
-        &|_| {
-            chain!(
-                resolver(Mark::new(), Mark::new(), true),
-                as_folder(AutorunTransformer::new()),
-                as_folder(PluckAutorunCallExpr::new(&config)),
-            )
-        },
-        &input,
-        &output,
-        Default::default(),
-    );
 }
