@@ -21,6 +21,7 @@ use swc_core::{
 
 #[testing::fixture("../test/fixture/**/input.ts")]
 fn fixture(input: PathBuf) {
+    //
     let dirname = input.parent().unwrap();
     let output = dirname.join("output.ts");
     let config = dirname.join("config.json");
@@ -110,7 +111,7 @@ impl <'a> VisitMut for PluckAutorunCallExpr<'a> {
                     autorun_call_expr.into_stmt()
                 }
                 else {
-                    quote_ident!("Error: Autorun call expression not found").into_stmt()
+                    quote_ident!("AUTORUN_NOT_FOUND").into_stmt()
                 }
             )
         ];
