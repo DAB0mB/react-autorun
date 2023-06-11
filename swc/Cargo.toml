@@ -12,6 +12,7 @@ lto = true
 
 [dependencies]
 swc_core = { version = "0.76.*", features = ["ecma_plugin_transform", "ecma_utils"] }
+linked_hash_set = "0.1.4"
 
 [dev-dependencies]
 serde = "1"

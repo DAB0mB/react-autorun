@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use linked_hash_set::LinkedHashSet;
 use swc_core::{
     common::DUMMY_SP,
     ecma::{
@@ -253,7 +254,7 @@ impl <'a> Visit for IgnoredHooksExtractor<'a> {
 
 struct HookDepsExtractor<'a> {
     component_ctxt: u32,
-    deps: HashSet<String>,
+    deps: LinkedHashSet<String>,
     visited_nodes: RefSet,
     callee_member_nodes: RefSet,
     ignored_hooks: &'a IgnoredHooksExtractor<'a>,
@@ -264,7 +265,7 @@ impl <'a> HookDepsExtractor<'a> {
         Self {
             component_ctxt,
             ignored_hooks,
-            deps: HashSet::new(),
+            deps: LinkedHashSet::new(),
             visited_nodes: RefSet::new(),
             callee_member_nodes: RefSet::new(),
         }
