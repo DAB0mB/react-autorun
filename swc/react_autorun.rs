@@ -10,8 +10,7 @@ use swc_core::{
 };
 
 pub struct AutorunTransformer {
-    ctxt_stack: Vec<u32>,
-    parent_ctxt: u32,
+    curr_ctxt: u32,
     autorun_imports: ImportsExtractor,
     use_state_imports: ImportsExtractor,
     use_reducer_imports: ImportsExtractor,
@@ -21,8 +20,7 @@ pub struct AutorunTransformer {
 impl AutorunTransformer {
     pub fn new() -> Self {
         Self {
-            ctxt_stack: vec![1],
-            parent_ctxt: 0,
+            curr_ctxt: 0,
             autorun_imports: ImportsExtractor::new("autorun", "react-autorun"),
             use_state_imports: ImportsExtractor::new("useState", "react"),
             use_reducer_imports: ImportsExtractor::new("useRef", "react"),
@@ -73,7 +71,7 @@ impl AutorunTransformer {
 
         let hook_deps = {
             let mut hook_deps = HookDepsExtractor::new(
-                self.parent_ctxt,
+                self.curr_ctxt,
                 &ignored_hooks,
             );
             callback.visit_children_with(&mut hook_deps);
@@ -104,16 +102,10 @@ impl AutorunTransformer {
 
 impl VisitMut for AutorunTransformer {
     fn visit_mut_block_stmt(&mut self, n: &mut BlockStmt) {
-        if let Some(last) = self.ctxt_stack.last() {
-            self.parent_ctxt = last.clone();
-        }
-
-        self.ctxt_stack.push(n.span.ctxt.as_u32());
+        let prev_ctxt = n.span.ctxt.as_u32();
+        self.curr_ctxt = n.span.ctxt.as_u32();
         n.visit_mut_children_with(self);
-
-        if let Some(pop) = self.ctxt_stack.pop() {
-            self.parent_ctxt = pop;
-        }
+        self.curr_ctxt = prev_ctxt;
     }
 
     fn visit_mut_import_decl(&mut self, n: &mut ImportDecl) {
@@ -326,7 +318,7 @@ impl <'a> Visit for HookDepsExtractor<'a> {
             return;
         }
 
-        let mut dep = obj_ident.to_string();
+        let mut dep = get_ident_name(obj_ident).to_string();
         for prop in props.into_iter() {
             dep.push_str(member_prop_to_path(prop).as_str());
         }
@@ -348,7 +340,7 @@ impl <'a> Visit for HookDepsExtractor<'a> {
             return;
         }
 
-        self.deps.insert(n.to_string());
+        self.deps.insert(get_ident_name(n).to_string());
     }
 }
 

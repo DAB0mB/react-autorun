@@ -11,10 +11,10 @@ use std::{
 
 use react_autorun::AutorunTransformer;
 use swc_core::{
-    common::chain,
+    common::{chain, Mark},
     ecma::{
         ast::*,
-        transforms::testing::{test, test_fixture},
+        transforms::{base::resolver, testing::{test, test_fixture}},
         utils::{ExprFactory, quote_ident},
         visit::{as_folder, VisitMut, VisitMutWith},
     },
@@ -115,6 +115,7 @@ fn fixture(input: PathBuf) {
         Default::default(),
         &|_| {
             chain!(
+                resolver(Mark::new(), Mark::new(), true),
                 as_folder(AutorunTransformer::new()),
                 as_folder(PluckAutorunCallExpr::new(&config)),
             )
