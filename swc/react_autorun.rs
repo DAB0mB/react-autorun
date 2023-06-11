@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, mem::replace};
 use linked_hash_set::LinkedHashSet;
 use swc_core::{
     common::DUMMY_SP,
@@ -12,6 +12,7 @@ use swc_core::{
 
 pub struct AutorunTransformer {
     curr_ctxt: u32,
+    ignored_hooks: IdentKeySet,
     autorun_imports: ImportsExtractor,
     use_state_imports: ImportsExtractor,
     use_reducer_imports: ImportsExtractor,
@@ -22,10 +23,11 @@ impl AutorunTransformer {
     pub fn new() -> Self {
         Self {
             curr_ctxt: 0,
+            ignored_hooks: IdentKeySet::new(),
             autorun_imports: ImportsExtractor::new("autorun", "react-autorun"),
             use_state_imports: ImportsExtractor::new("useState", "react"),
-            use_reducer_imports: ImportsExtractor::new("useRef", "react"),
-            use_ref_imports: ImportsExtractor::new("useReducer", "react"),
+            use_reducer_imports: ImportsExtractor::new("useReducer", "react"),
+            use_ref_imports: ImportsExtractor::new("useRef", "react"),
         }
     }
 
@@ -56,24 +58,14 @@ impl AutorunTransformer {
             _ => return,
         };
 
-        if !self.autorun_imports.contains(autorun) {
+        if !self.autorun_imports.specifiers.contains(autorun) {
             return;
         }
-
-        let ignored_hooks = {
-            let mut ignored_hooks = IgnoredHooksExtractor::new(
-                &self.use_state_imports,
-                &self.use_reducer_imports,
-                &self.use_ref_imports,
-            );
-            callback.visit_children_with(&mut ignored_hooks);
-            ignored_hooks
-        };
 
         let hook_deps = {
             let mut hook_deps = HookDepsExtractor::new(
                 self.curr_ctxt,
-                &ignored_hooks,
+                &self.ignored_hooks,
             );
             callback.visit_children_with(&mut hook_deps);
             hook_deps
@@ -103,10 +95,23 @@ impl AutorunTransformer {
 
 impl VisitMut for AutorunTransformer {
     fn visit_mut_block_stmt(&mut self, n: &mut BlockStmt) {
-        let prev_ctxt = n.span.ctxt.as_u32();
-        self.curr_ctxt = n.span.ctxt.as_u32();
+        let mut ignored_hooks = {
+            let ignored_hooks = IgnoredHooksExtractor::new(
+                &self.use_state_imports.specifiers,
+                &self.use_reducer_imports.specifiers,
+                &self.use_ref_imports.specifiers,
+            );
+            ignored_hooks
+        };
+        n.visit_children_with(&mut ignored_hooks);
+
+        let prev_ignored_hooks = replace(&mut self.ignored_hooks, ignored_hooks.idents);
+        let prev_ctxt = replace(&mut self.curr_ctxt, n.span.ctxt.as_u32());
+
         n.visit_mut_children_with(self);
+
         self.curr_ctxt = prev_ctxt;
+        self.ignored_hooks = prev_ignored_hooks;
     }
 
     fn visit_mut_import_decl(&mut self, n: &mut ImportDecl) {
@@ -124,7 +129,7 @@ impl VisitMut for AutorunTransformer {
 }
 
 struct ImportsExtractor {
-    specifiers: HashSet<String>,
+    specifiers: IdentKeySet,
     export_name: String,
     module_name: String,
 }
@@ -132,7 +137,7 @@ struct ImportsExtractor {
 impl ImportsExtractor {
     fn new(id_name: &str, module_name: &str) -> Self {
         Self {
-            specifiers: HashSet::new(),
+            specifiers: IdentKeySet::new(),
             export_name: String::from(id_name),
             module_name: String::from(module_name),
         }
@@ -157,44 +162,34 @@ impl ImportsExtractor {
                 continue;
             }
 
-            self.specifiers.insert(get_ident_key(&named_specifier.local));
+            self.specifiers.insert(&named_specifier.local);
         }
-    }
-
-    fn contains(&self, ident: &Ident) -> bool {
-        let key = get_ident_key(ident);
-        self.specifiers.contains(&key)
     }
 }
 
 struct IgnoredHooksExtractor<'a> {
-    idents: HashSet<String>,
-    use_state_imports: &'a ImportsExtractor,
-    use_reducer_imports: &'a ImportsExtractor,
-    use_ref_imports: &'a ImportsExtractor,
+    idents: IdentKeySet,
+    use_state_imports: &'a IdentKeySet,
+    use_reducer_imports: &'a IdentKeySet,
+    use_ref_imports: &'a IdentKeySet,
 }
 
-impl <'a> IgnoredHooksExtractor<'a> {
+impl <'a>IgnoredHooksExtractor<'a> {
     fn new(
-        use_state_imports: &'a ImportsExtractor,
-        use_reducer_imports: &'a ImportsExtractor,
-        use_ref_imports: &'a ImportsExtractor,
+        use_state_imports: &'a IdentKeySet,
+        use_reducer_imports: &'a IdentKeySet,
+        use_ref_imports: &'a IdentKeySet,
     ) -> Self {
         Self {
-            idents: HashSet::new(),
+            idents: IdentKeySet::new(),
             use_state_imports,
             use_reducer_imports,
             use_ref_imports,
         }
     }
-
-    fn contains(&self, ident: &Ident) -> bool {
-        let key = get_ident_key(ident);
-        self.idents.contains(&key)
-    }
 }
 
-impl <'a> Visit for IgnoredHooksExtractor<'a> {
+impl <'a>Visit for IgnoredHooksExtractor<'a> {
     fn visit_var_declarator(&mut self, n: &VarDeclarator) {
         let init = match &n.init {
             Some(init) => init,
@@ -216,19 +211,19 @@ impl <'a> Visit for IgnoredHooksExtractor<'a> {
             _ => return,
         };
 
-        let is_ref = self.use_ref_imports.contains(callee);
+        let is_ref = self.use_ref_imports.contains(&callee);
         if is_ref {
             let id = match n.name.as_ident() {
                 Some(ident) => &ident.id,
                 _ => return,
             };
-            self.idents.insert(get_ident_key(id));
+            self.idents.insert(id);
             return;
         }
 
         let is_state =
-            self.use_state_imports.contains(callee) ||
-            self.use_reducer_imports.contains(callee);
+            self.use_state_imports.contains(&callee) ||
+            self.use_reducer_imports.contains(&callee);
         if !is_state {
             return;
         }
@@ -248,7 +243,7 @@ impl <'a> Visit for IgnoredHooksExtractor<'a> {
             _ => return,
         };
 
-        self.idents.insert(get_ident_key(id));
+        self.idents.insert(id);
     }
 }
 
@@ -257,11 +252,11 @@ struct HookDepsExtractor<'a> {
     deps: LinkedHashSet<String>,
     visited_nodes: RefSet,
     callee_member_nodes: RefSet,
-    ignored_hooks: &'a IgnoredHooksExtractor<'a>,
+    ignored_hooks: &'a IdentKeySet,
 }
 
-impl <'a> HookDepsExtractor<'a> {
-    fn new(component_ctxt: u32, ignored_hooks: &'a IgnoredHooksExtractor<'a>) -> Self {
+impl <'a>HookDepsExtractor<'a> {
+    fn new(component_ctxt: u32, ignored_hooks: &'a IdentKeySet) -> Self {
         Self {
             component_ctxt,
             ignored_hooks,
@@ -276,7 +271,7 @@ impl <'a> HookDepsExtractor<'a> {
     }
 }
 
-impl <'a> Visit for HookDepsExtractor<'a> {
+impl <'a>Visit for HookDepsExtractor<'a> {
     fn visit_callee(&mut self, n: &Callee) {
         let expr = match n.as_expr() {
             Some(expr) => expr,
@@ -394,6 +389,26 @@ impl RefSet {
 
     fn contains<V>(&self, value: &V) -> bool {
         self.hash_set.contains(&get_pointer_addr(value))
+    }
+}
+
+struct IdentKeySet {
+    hash_set: HashSet<String>,
+}
+
+impl IdentKeySet {
+    fn new() -> Self {
+        Self {
+            hash_set: HashSet::new(),
+        }
+    }
+
+    fn insert(&mut self, ident: &Ident) {
+        self.hash_set.insert(get_ident_key(ident).to_string());
+    }
+
+    fn contains(&self, ident: &Ident) -> bool {
+        self.hash_set.contains(&get_ident_key(ident))
     }
 }
 

@@ -21,7 +21,6 @@ use swc_core::{
 
 #[testing::fixture("../test/fixture/**/input.ts")]
 fn fixture(input: PathBuf) {
-    //
     let dirname = input.parent().unwrap();
     let output = dirname.join("output.ts");
     let config = dirname.join("config.json");

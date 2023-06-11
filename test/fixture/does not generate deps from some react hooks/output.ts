@@ -1,0 +1,1 @@
+autorun(() => [state, reducedState])
