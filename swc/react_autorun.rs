@@ -365,7 +365,7 @@ fn member_prop_to_path(prop_member: &MemberProp) -> String {
     else {
         let value = match computed.expr.as_lit() {
             Some(Lit::Num(num)) => num.value.to_string(),
-            Some(Lit::Str(str)) => str.value.to_string(),
+            Some(Lit::Str(str)) => format!("\"{}\"", str.value.to_string()),
             _ => return path,
         };
         path.push_str(value.as_str());
