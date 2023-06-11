@@ -288,7 +288,7 @@ impl <'a> Visit for HookDepsExtractor<'a> {
         };
 
         self.callee_member_nodes.insert(member);
-        member.visit_children_with(self);
+        member.visit_with(self);
     }
 
     fn visit_member_expr(&mut self, n: &MemberExpr) {
