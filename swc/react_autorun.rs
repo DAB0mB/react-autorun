@@ -1,10 +1,13 @@
-use std::{collections::{HashSet}};
-use swc_core::{ecma::{
-    ast::*,
-    utils::{ExprFactory, quote_ident, ExprExt},
-    visit::{as_folder, FoldWith, VisitMut, VisitMutWith, Visit, VisitWith},
-}, common::{DUMMY_SP}};
-use swc_core::plugin::{plugin_transform, proxies::TransformPluginProgramMetadata};
+use std::collections::HashSet;
+use swc_core::{
+    common::DUMMY_SP,
+    ecma::{
+        ast::*,
+        utils::{ExprExt, ExprFactory, quote_ident},
+        visit::{as_folder, FoldWith, Visit, VisitMut, VisitMutWith, VisitWith},
+    },
+    plugin::{plugin_transform, proxies::TransformPluginProgramMetadata},
+};
 
 pub struct AutorunTransformer {
     ctxt_stack: Vec<u32>,
@@ -157,7 +160,7 @@ impl ImportsExtractor {
                 Some(ModuleExportName::Ident(export_id)) => export_id,
                 _ => &named_specifier.local,
             };
-            if export_id.to_string() != self.export_name {
+            if get_ident_name(export_id) != self.export_name {
                 continue;
             }
 
@@ -353,7 +356,7 @@ fn member_prop_to_path(prop_member: &MemberProp) -> String {
     let mut path = String::from("?.");
 
     if let Some(ident) = prop_member.as_ident() {
-        path.push_str(ident.sym.to_string().as_str());
+        path.push_str(get_ident_name(ident));
         return path;
     }
 
@@ -365,7 +368,7 @@ fn member_prop_to_path(prop_member: &MemberProp) -> String {
     path.push('[');
 
     if let Some(ident) = computed.expr.as_ident() {
-        path.push_str(ident.sym.to_string().as_str());
+        path.push_str(get_ident_name(ident));
     }
     else {
         let value = match computed.expr.as_lit() {
@@ -401,12 +404,12 @@ impl RefSet {
     }
 }
 
+fn get_ident_name(ident: &Ident) -> &str {
+    &*ident.sym
+}
+
 fn get_ident_key(ident: &Ident) -> String {
-    let mut mut_specifier = String::new();
-    mut_specifier.push_str(ident.sym.to_string().as_str());
-    mut_specifier.push_str(ident.span.ctxt.as_u32().to_string().as_str());
-    let specifier = mut_specifier;
-    specifier
+    ident.sym.to_string()
 }
 
 fn get_pointer_addr<V>(value: &V) -> u32 {

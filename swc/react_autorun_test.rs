@@ -1,5 +1,6 @@
 mod react_autorun;
 
+use env_logger;
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -10,15 +11,14 @@ use std::{
 
 use react_autorun::AutorunTransformer;
 use swc_core::{
-    common::{chain},
+    common::chain,
     ecma::{
         ast::*,
-        utils::{ExprFactory, quote_ident},
         transforms::testing::{test, test_fixture},
+        utils::{ExprFactory, quote_ident},
         visit::{as_folder, VisitMut, VisitMutWith},
     },
 };
-
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Config {
@@ -105,6 +105,7 @@ impl <'a> VisitMut for PluckAutorunCallExpr<'a> {
 
 #[testing::fixture("../test/fixture/**/input.ts")]
 fn fixture(input: PathBuf) {
+    env_logger::init();
     let dirname = input.parent().unwrap();
     let output = dirname.join("output.ts");
     let config = dirname.join("config.json");
