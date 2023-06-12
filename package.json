@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
-    "test": "node -r @esbuild-kit/cjs-loader --test **/*.test.ts",
+    "test": "node -r @esbuild-kit/cjs-loader scripts/test.ts",
     "prepack": "npm run build"
   },
   "dependencies": {

@@ -1,4 +1,3 @@
-import * as esbuild from 'esbuild';
 import { execa } from 'execa';
 import { resolve } from 'path';
 import { performance } from 'perf_hooks';
@@ -6,42 +5,30 @@ import { performance } from 'perf_hooks';
 const startTime = performance.now();
 
 Promise.allSettled([
-  esbuild.build({
-    entryPoints: [resolve('babel/index.ts')],
-    outfile: resolve('babel/index.js'),
-    bundle: true,
-    sourcemap: true,
-    platform: 'node',
-    packages: 'external',
-    target: 'es6',
-  }).then((report) => {
-    console.log('Babel build', {
-      duration: measureDuration(),
-      report,
-    });
-  }),
-
-  esbuild.build({
-    entryPoints: [resolve('runtime/index.ts')],
-    outfile: resolve('runtime/index.js'),
-    bundle: true,
-    sourcemap: true,
-    platform: 'node',
-    packages: 'external',
-    target: 'es6',
-  }).then((report) => {
+  execa('npm', ['run', 'build'], {
+    cwd: resolve('runtime'),
+  }).then((cp) => {
     console.log('Runtime build', {
       duration: measureDuration(),
-      report,
+      cp,
     });
   }),
 
-  execa('cargo', ['build-wasi', '--release'], {
-    cwd: resolve('swc'),
-  }).then((report) => {
-    console.log('Swc build', {
+  execa('npm', ['run', 'build'], {
+    cwd: resolve('plugin/babel'),
+  }).then((cp) => {
+    console.log('Babel plugin build', {
       duration: measureDuration(),
-      report,
+      cp,
+    });
+  }),
+
+  execa('npm', ['run', 'build'], {
+    cwd: resolve('plugin/swc'),
+  }).then((cp) => {
+    console.log('Swc plugin build', {
+      duration: measureDuration(),
+      cp,
     });
   }),
 ]).then(results => {
@@ -59,5 +46,5 @@ Promise.allSettled([
 });
 
 function measureDuration() {
-  return `${(performance.now() - startTime).toFixed(2)}s`;
+  return `${((performance.now() - startTime) / 1_000).toFixed(2)}s`;
 }

@@ -1,3 +1,0 @@
-{
-  "main": "target/wasm32-wasi/release/react_autorun.wasm"
-}

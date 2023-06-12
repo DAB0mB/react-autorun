@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "main": "target/wasm32-wasi/release/react_autorun.wasm",
+  "scripts": {
+    "build": "cargo build-wasi --release",
+    "test": "cargo test"
+  }
+}

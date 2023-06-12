@@ -4,8 +4,11 @@ import traverse, { visitors } from '@babel/traverse';
 import { Node } from '@babel/types';
 import { equal } from 'node:assert';
 import { readFile, readdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { test } from 'node:test';
 import plugin from './babel';
+
+const testDir = resolve(__dirname, '../test');
 
 type Config = typeof defaultConfig;
 
@@ -14,13 +17,13 @@ const defaultConfig = {
 };
 
 test('babel plugin', async (t) => {
-  const fixtures = await readdir('test/fixture');
+  const fixtures = await readdir(`${testDir}/fixture`);
 
   await Promise.all(fixtures.map(async fixture => {
-    const dirname = `test/fixture/${fixture}`;
-    const input = await readFile(`${dirname}/input.ts`).then(file => file.toString().trim());
-    const output = await readFile(`${dirname}/output.ts`).then(file => file.toString().trim());
-    const config: Config = await readFile(`${dirname}/config.json`)
+    const fixtureDir = `${testDir}/fixture/${fixture}`;
+    const input = await readFile(`${fixtureDir}/input.ts`).then(file => file.toString().trim());
+    const output = await readFile(`${fixtureDir}/output.ts`).then(file => file.toString().trim());
+    const config: Config = await readFile(`${fixtureDir}/config.json`)
       .then(
         file => ({ ...defaultConfig, ...JSON.parse(file.toString()) }),
         () => ({ ...defaultConfig }),

@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
+    "test": "node -r @esbuild-kit/cjs-loader --test babel.test.ts"
+  }
+}
