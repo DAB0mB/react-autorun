@@ -1,5 +1,4 @@
-import { CodeGenerator } from '@babel/generator';
-import { NodePath, Visitor, visitors } from '@babel/traverse';
+import { NodePath, Scope, Visitor, visitors } from '@babel/traverse';
 import * as t from '@babel/types';
 
 export default function () {
@@ -20,7 +19,7 @@ export default function () {
       const autorunBinding = callExpression.scope.getBinding(autorun.node.name);
       if (!autorunBinding || autorunImportSpecifiers.get(autorun.node.name) !== autorunBinding.path) return;
 
-      const deps = getFunctionExpressionDeps(callback, dep => filterReactDeps(callExpression, dep));
+      const deps = getFunctionExpressionDeps(callback, dep => filterReactDeps(callExpression.scope, dep));
 
       autorun.replaceWith(
         t.callExpression(autorun.node, [
@@ -36,8 +35,8 @@ export default function () {
 
   // Exclude some dependencies that were yielded from React hooks
   // Source: https://github.com/facebook/react/blob/5309f102854475030fb91ab732141411b49c1126/packages/eslint-plugin-react-hooks/src/ExhaustiveDeps.js#L151
-  const filterReactDeps = (callExpression: NodePath<t.CallExpression>, dep: string) => {
-    const depBidning = callExpression.scope.getOwnBinding(dep);
+  const filterReactDeps = (scope: Scope, dep: string) => {
+    const depBidning = scope.getOwnBinding(dep);
     if (!depBidning) return true;
 
     const depVariableDeclarator = depBidning.path;
@@ -49,7 +48,7 @@ export default function () {
     const depCallee = depInit.get('callee');
     if (!depCallee.isIdentifier()) return true;
 
-    const depCalleeBinding = callExpression.scope.getBinding(depCallee.node.name);
+    const depCalleeBinding = scope.getBinding(depCallee.node.name);
     if (!depCalleeBinding) return true;
 
     const isRef = useRefImportSpecifiers.get(depCallee.node.name) === depCalleeBinding.path;
@@ -134,7 +133,10 @@ function getFunctionExpressionDeps(
       let object: t.Node = memberExpression.node;
       const props: string[] = [];
       while (t.isMemberExpression(object)) {
-        props.unshift(object.computed ? `?.[${generateCode(object.property)}]` : `?.${(object.property as t.Identifier).name}`);
+        const prop = memberExprToProp(object);
+        if (!prop) return;
+
+        props.unshift(prop);
         object = object.object;
       }
 
@@ -147,10 +149,10 @@ function getFunctionExpressionDeps(
         dep += props.shift();
       }
 
-      deps.add(dep + props.shift());
       if (t.isCallExpression(memberExpression.parentPath.node)) {
         deps.add(dep);
       }
+      deps.add(dep + props.shift());
     },
 
     Identifier(identifier) {
@@ -167,8 +169,28 @@ function getFunctionExpressionDeps(
   return Array.from(deps);
 }
 
-function generateCode(ast: t.Node) {
-  return new CodeGenerator(ast, {
-    minified: true,
-  }).generate().code;
+function memberExprToProp(member: t.MemberExpression) {
+  if (member.computed) {
+    let computedExpr: string;
+
+    if (t.isNumericLiteral(member.property)) {
+      computedExpr = member.property.value.toString();
+    }
+    else if (t.isStringLiteral(member.property)) {
+      computedExpr = `"${member.property.value}"`;
+    }
+    else if (t.isIdentifier(member.property)) {
+      computedExpr = member.property.name;
+    }
+    else {
+      return;
+    }
+
+    return `?.[${computedExpr}]`;
+  }
+  if (t.isIdentifier(member.property)) {
+    return `?.${member.property.name}`;
+  }
+
+  return;
 }

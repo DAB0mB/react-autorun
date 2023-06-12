@@ -75,7 +75,7 @@ test('babel plugin', async (t) => {
       }
     `;
 
-    equal(getTransformedAutorunCode(input), 'autorun(() => [caller?.callee, caller])');
+    equal(getTransformedAutorunCode(input), 'autorun(() => [caller, caller?.callee])');
   });
 
   await t.test('includes computed properties of member expressions', () => {
