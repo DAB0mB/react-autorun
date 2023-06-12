@@ -1,5 +1,6 @@
 {
   "private": true,
+  "main": "index.js",
   "scripts": {
     "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
     "test": "node -r @esbuild-kit/cjs-loader --test runtime.test.ts"

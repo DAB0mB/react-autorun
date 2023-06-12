@@ -6,14 +6,21 @@
   "files": [
     "package.json",
     "README.md",
-    "babel/**/*.ts",
-    "!babel/**/*.test.ts",
-    "babel/index.js",
-    "babel/index.js.map",
-    "runtime/**/*.ts",
-    "!runtime/**/*.test.ts",
+
+    "runtime/package.json",
+    "runtime/runtime.ts",
     "runtime/index.js",
-    "runtime/index.js.map"
+    "runtime/index.js.map",
+
+    "plugin/babel/package.json",
+    "plugin/babel/babel.ts",
+    "plugin/babel/index.js",
+    "plugin/babel/index.js.map",
+
+    "plugin/swc/Cargo.toml",
+    "plugin/swc/package.json",
+    "plugin/swc/react_autorun.rs",
+    "plugin/swc/target/wasm32-wasi/release/react_autorun.wasm"
   ],
   "scripts": {
     "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
