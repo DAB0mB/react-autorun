@@ -104,7 +104,7 @@ function callerRefInit() {
 
 With this usage of `autorun.ignore`, the caller value returned by `useCaller()` will be excluded as a dependency when used within other hooks. This ensures that the hook won't be invalidated if, for some particular reason, the caller reference has changed.
 
-## Usage
+## Installation and Setup
 
 To install React Autorun, use npm:
 
@@ -112,15 +112,36 @@ To install React Autorun, use npm:
 npm install react-autorun
 ```
 
-Next, load the plugin in your `.babelrc` configuration file:
+Next, load the plugin using Babel or SWC.
+
+### Babel Setup
+
+If you use Babel, edit your `.babelrc` file to include `react-autorun/plugin/babel`:
 
 ```json
 {
-  "plugins": ["react-autorun/babel"]
+  "plugins": ["react-autorun/plugin/babel"]
 }
 ```
 
-I'm currently exploring the possibility of implementing a [Next.js SWC plugin](https://nextjs.org/docs/architecture/nextjs-compiler#swc-plugins-experimental) for React Autorun as part of its ongoing development. Once the library demonstrates a strong market-fit and stability, I'll prioritize the development of the SWC plugin. Please keep in mind that React Autorun is still in the experimental phase, and your feedback and contributions are highly appreciated.
+### SWC Setup
+
+If you use SWC with Next.js, edit your `next.config.js` file to include `react-autorun/plugin/swc`:
+
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    swcPlugins: [
+      ['react-autorun/plugin/swc', {}]
+    ]
+  }
+}
+
+module.exports = nextConfig
+```
+
+Please note that [loading SWC plugins with Next.js is currently an experimental feature](https://nextjs.org/docs/architecture/nextjs-compiler#swc-plugins-experimental), which may lead to inconsistent results. Make sure to review the Next.js documentation for further details.
 
 ## License
 
