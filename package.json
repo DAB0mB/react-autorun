@@ -17,17 +17,16 @@
   ],
   "scripts": {
     "build": "node -r @esbuild-kit/cjs-loader scripts/build.ts",
-    "transform": "node -r @esbuild-kit/cjs-loader scripts/transform.ts",
     "test": "node -r @esbuild-kit/cjs-loader --test **/*.test.ts",
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@babel/generator": "^7.21.5",
     "@babel/traverse": "^7.21.5",
     "@babel/types": "^7.21.5"
   },
   "devDependencies": {
     "@babel/core": "^7.21.8",
+    "@babel/generator": "^7.22.5",
     "@babel/parser": "^7.21.8",
     "@babel/plugin-transform-typescript": "^7.21.3",
     "@esbuild-kit/cjs-loader": "^2.4.2",
