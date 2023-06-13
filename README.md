@@ -1,6 +1,6 @@
 # React Autorun
 
-React Autorun is a powerful macro that simplifies the management of dependencies for hooks in React. It offers a seamless way to specify dependencies while providing control over their behavior. With React Autorun, you can easily ignore specific objects from being included as dependencies, eliminating the need for workarounds like wrapping values with `useRef`.
+React Autorun is a powerful macro that simplifies dependency management for hooks in React. It provides a seamless way to specify dependencies while offering control over their behavior. With React Autorun, you can easily exclude specific objects from being included as dependencies, eliminating the need for workarounds like wrapping values with `useRef`. It is currently available as a plugin for [Babel](https://babeljs.io/) or [SWC](https://swc.rs/). For more information, refer to the [Installation and Setup](#installation-and-setup) section.
 
 ## Key Features
 
