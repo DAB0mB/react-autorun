@@ -1,19 +1,18 @@
 {
   "name": "react-autorun",
   "description": "A macro that compiles into a dependencies array for hooks.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "runtime",
   "files": [
-    "package.json",
-    "README.md",
-
     "runtime/package.json",
     "runtime/runtime.ts",
+    "runtime/index.ts",
     "runtime/index.js",
     "runtime/index.js.map",
 
     "plugin/babel/package.json",
     "plugin/babel/babel.ts",
+    "plugin/babel/index.ts",
     "plugin/babel/index.js",
     "plugin/babel/index.js.map",
 
