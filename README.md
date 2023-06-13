@@ -60,7 +60,7 @@ export function Blackjack() {
     return () => {
       unlistenToRestart();
     };
-  }, autorun(() => [game?.restartEvent?.listen, game?.restartEvent]));
+  }, autorun(() => [game?.restartEvent, game?.restartEvent?.listen]));
 
   return (
     <GameContext.Provider value={game}>
@@ -133,7 +133,7 @@ If you use SWC with Next.js, edit your `next.config.js` file to include `react-a
 const nextConfig = {
   experimental: {
     swcPlugins: [
-      ['react-autorun/plugin/swc', {}]
+      ['react-autorun/plugin/swc']
     ]
   }
 }
